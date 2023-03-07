@@ -1,27 +1,46 @@
 import { db } from "../db/config/index.js";
-import { YESTERDAY } from "../helpers/constants.js";
+import { TODAY } from "../helpers/constants.js";
 const bins = async (req, res) => {
   const query = req.query;
 
-  const dbQuery = `SELECT geoid, bydevice, serv_time FROM tcn_poi_schedule WHERE serv_time BETWEEN ${
-    query.from ? `"${query.from}"` : false || `"${YESTERDAY}"`
+  //Query for empted bins only
+  const dbQuery = `SELECT geoid, bydevice FROM tcn_poi_schedule WHERE serv_time BETWEEN ${
+    query.from ? `"${query.from}"` : false || `"${TODAY} 00:00"`
   } AND ${query.to ? `"${query.to}"` : false || "(select current_timestamp)"}`;
 
-  const data = await db.query(dbQuery);
+  //Query for all bins
+  const queryAllBins = `SELECT id, description, centerid, routid, bintypeid FROM tc_geofences WHERE attributes LIKE '%"bins": "yes"%'`;
 
-  let response = [];
+  try {
+    const allBins = await db.query(queryAllBins);
 
-  if (data?.length > 0) {
-    response = data.map((bin) => {
-      return {
-        binId: bin.geoid,
-        emptyTime: bin.serv_time,
-        emptedBy: bin.bydevice,
-      };
+    const data = await db.query(dbQuery);
+
+    const dataObject = {};
+
+    data.forEach((element) => {
+      dataObject[element.geoid] = element;
     });
-  }
 
-  res.json({ message: response });
+    let response = [];
+    if (data?.length > 0) {
+      response = allBins.map((bin) => {
+        if (dataObject[bin.id]) {
+          return {
+            ...bin,
+            status: "empted",
+          };
+        } else {
+          return {
+            ...bin,
+            status: "notEmpted",
+          };
+        }
+      });
+    }
+
+    res.json(response);
+  } catch (e) {}
 };
 
 const binById = async (req, res) => {
@@ -50,7 +69,7 @@ const binReports = async (req, res) => {
   const query = req.query;
 
   let dbQuery = `SELECT * FROM tcn_g_reprots WHERE time BETWEEN ${
-    query.from ? `"${query.from}"` : false || `"${YESTERDAY}"`
+    query.from ? `"${query.from}"` : false || `"${TODAY} 00:00"`
   } AND ${query.to ? `"${query.to}"` : false || "(select current_timestamp)"}`;
 
   const data = await db.query(dbQuery);
