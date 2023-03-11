@@ -46,13 +46,24 @@ const bins = async (req, res) => {
 const binById = async (req, res) => {
   const { id } = req.params;
 
-  const query = `SELECT * FROM tcn_op_plan`;
+  // const query = `SELECT tc_geofences.description, tc_geofences.routid, tcn_routs.id FROM tc_geofences
+  // LEFT JOIN tcn_routs ON tc_geofences.routid=tcn_routs.id  WHERE tc_geofences.attributes LIKE '%"bins": "yes"%'`;
+  // const query = `SELECT * FROM tcn_routs`;
+  const condition = `SELECT tcn_poi_schedule.id, tcn_poi_schedule.serv_time FROM tcn_poi_schedule WHERE serv_time BETWEEN "2023-03-08" AND "2023-03-10" AND tcn_poi_schedule.geoid=2777`;
+  const query = `IF EXISTS (${condition})
+                  THEN
+                  SELECT rout_code FROM tcn_routs;
+                  ELSE
+                  SELECT tc_geofences.description FROM tc_geofences WHERE tc_geofences.id = 1119;
+                  END IF;`;
+
+  // const query = `SELECT description from tc_geofences where id=2777`;
 
   const data = await db.query(query);
 
-  // console.log(data);
-  // res.end();
-  res.json({ message: data });
+  console.log(data);
+  res.end();
+  // res.json({ message: data });
 };
 
 const binReports = async (req, res) => {
