@@ -1,3 +1,4 @@
+import moment from "moment";
 import { db } from "../db/config/index.js";
 import { TODAY } from "../helpers/constants.js";
 const bins = async (req, res) => {
@@ -49,16 +50,29 @@ const binById = async (req, res) => {
   // const query = `SELECT tc_geofences.description, tc_geofences.routid, tcn_routs.id FROM tc_geofences
   // LEFT JOIN tcn_routs ON tc_geofences.routid=tcn_routs.id  WHERE tc_geofences.attributes LIKE '%"bins": "yes"%'`;
   // const query = `SELECT * FROM tcn_routs`;
-  const condition = `SELECT tcn_poi_schedule.id, tcn_poi_schedule.serv_time FROM tcn_poi_schedule WHERE serv_time BETWEEN "2023-03-08" AND "2023-03-10" AND tcn_poi_schedule.geoid=2777`;
+  const condition = `SELECT tcn_poi_schedule.id, tcn_poi_schedule.serv_time FROM tcn_poi_schedule WHERE serv_time BETWEEN "2023-03-04" AND "2023-03-10" AND tcn_poi_schedule.geoid=2777`;
   const query = `IF EXISTS (${condition})
                   THEN
-                  SELECT rout_code FROM tcn_routs;
+                  SELECT tcn_poi_schedule.id, tcn_poi_schedule.serv_time FROM tcn_poi_schedule WHERE serv_time BETWEEN "2023-03-04" AND "2023-03-10" AND tcn_poi_schedule.geoid=2777;
                   ELSE
                   SELECT tc_geofences.description FROM tc_geofences WHERE tc_geofences.id = 1119;
                   END IF;`;
 
   // const query = `SELECT description from tc_geofences where id=2777`;
 
+  const lastSevenDays = [];
+  console.log("START", new Date());
+  for (let i = 0; i < 7; i++) {
+    const time = moment().subtract(i, "day").format("YYYY-MM-DD");
+
+    const query = `SELECT serv_time FROM tcn_poi_schedule WHERE serv_time LIKE '%${time}%' AND geoid=1119`;
+
+    const data = await db.query(query);
+
+    lastSevenDays.push(data[0] || "-");
+  }
+  console.log("END", new Date());
+  console.log(lastSevenDays);
   const data = await db.query(query);
 
   console.log(data);
