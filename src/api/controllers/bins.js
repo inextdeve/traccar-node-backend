@@ -1,6 +1,6 @@
 import moment from "moment";
 import { db } from "../db/config/index.js";
-import { TODAY } from "../helpers/constants.js";
+import { TODAY, LAST7DAYS, YESTERDAY, LASTWEEK } from "../helpers/constants.js";
 const bins = async (req, res) => {
   const query = req.query;
 
@@ -45,39 +45,51 @@ const bins = async (req, res) => {
 };
 
 const binById = async (req, res) => {
+  //GET TODAY STATUS
   const { id } = req.params;
 
-  // const query = `SELECT tc_geofences.description, tc_geofences.routid, tcn_routs.id FROM tc_geofences
-  // LEFT JOIN tcn_routs ON tc_geofences.routid=tcn_routs.id  WHERE tc_geofences.attributes LIKE '%"bins": "yes"%'`;
-  // const query = `SELECT * FROM tcn_routs`;
-  const condition = `SELECT tcn_poi_schedule.id, tcn_poi_schedule.serv_time FROM tcn_poi_schedule WHERE serv_time BETWEEN "2023-03-04" AND "2023-03-10" AND tcn_poi_schedule.geoid=2777`;
-  const query = `IF EXISTS (${condition})
+  const condition = `SELECT tcn_poi_schedule.serv_time FROM tcn_poi_schedule WHERE serv_time BETWEEN "${TODAY} 00:00" AND (select current_timestamp) AND tcn_poi_schedule.geoid=${id}`;
+
+  const dbQuery = `IF EXISTS (${condition})
                   THEN
-                  SELECT tcn_poi_schedule.id, tcn_poi_schedule.serv_time FROM tcn_poi_schedule WHERE serv_time BETWEEN "2023-03-04" AND "2023-03-10" AND tcn_poi_schedule.geoid=2777;
+                    SELECT tcn_poi_schedule.geoid AS id, tcn_poi_schedule.serv_time, tcn_poi_schedule.VehicleID,tc_geofences.description, tc_geofences.area AS position,tcn_centers.center_name, tcn_routs.rout_code, tc_drivers.name AS driverName, tc_drivers.phone, tcn_bin_type.bintype FROM tcn_poi_schedule
+                    JOIN tc_geofences ON tcn_poi_schedule.geoid=tc_geofences.id
+                    JOIN tcn_centers ON tc_geofences.centerid=tcn_centers.id
+                    JOIN tcn_routs ON tc_geofences.routid=tcn_routs.id
+                    JOIN tc_drivers ON tcn_routs.driverid=tc_drivers.id
+                    JOIN tcn_bin_type ON tc_geofences.bintypeid=tcn_bin_type.id
+                    WHERE tcn_poi_schedule.serv_time BETWEEN "${TODAY} 00:00" AND (select current_timestamp) AND tcn_poi_schedule.geoid=${id} AND tc_geofences.attributes LIKE '%"bins": "yes"%';
                   ELSE
-                  SELECT tc_geofences.description FROM tc_geofences WHERE tc_geofences.id = 1119;
+                    SELECT tc_geofences.id, tc_geofences.description, tc_geofences.area AS position, tcn_centers.center_name, tcn_routs.rout_code, tc_drivers.name AS driverName, tc_drivers.phone, tcn_bin_type.bintype FROM tc_geofences
+                    JOIN tcn_centers ON tc_geofences.centerid=tcn_centers.id
+                    JOIN tcn_routs ON tc_geofences.routid=tcn_routs.id
+                    JOIN tc_drivers ON tcn_routs.driverid=tc_drivers.id
+                    JOIN tcn_bin_type ON tc_geofences.bintypeid=tcn_bin_type.id
+                    WHERE tc_geofences.id=${id} AND tc_geofences.attributes LIKE '%"bins": "yes"%';
                   END IF;`;
 
-  // const query = `SELECT description from tc_geofences where id=2777`;
+  const data = await db.query(dbQuery);
 
-  const lastSevenDays = [];
-  console.log("START", new Date());
-  for (let i = 0; i < 7; i++) {
-    const time = moment().subtract(i, "day").format("YYYY-MM-DD");
+  const last7DaysQuery = `SELECT tcn_poi_schedule.serv_time, tcn_poi_schedule.VehicleID FROM tcn_poi_schedule WHERE tcn_poi_schedule.serv_time BETWEEN "${LASTWEEK}" AND (select current_timestamp) AND  tcn_poi_schedule.geoid=${id}`;
 
-    const query = `SELECT serv_time FROM tcn_poi_schedule WHERE serv_time LIKE '%${time}%' AND geoid=1119`;
+  const last7DaysStatus = await db.query(last7DaysQuery);
 
-    const data = await db.query(query);
+  //Check which day is empted and not
+  const lastSevenDaysCheck = LAST7DAYS.map((day) => {
+    return {
+      date: day,
+      empted: last7DaysStatus.some(
+        (date) => date.serv_time.toISOString().split("T")[0] === day
+      ),
+    };
+  });
 
-    lastSevenDays.push(data[0] || "-");
-  }
-  console.log("END", new Date());
-  console.log(lastSevenDays);
-  const data = await db.query(query);
-
-  console.log(data);
-  res.end();
-  // res.json({ message: data });
+  const response = {
+    bin: data[0].map((ele) => ({ ...ele, phone: `${ele.phone}` })),
+    last7Days: lastSevenDaysCheck,
+  };
+  
+  res.json(response);
 };
 
 const binReports = async (req, res) => {
