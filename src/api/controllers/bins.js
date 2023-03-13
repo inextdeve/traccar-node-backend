@@ -4,13 +4,26 @@ import { TODAY, LAST7DAYS, YESTERDAY, LASTWEEK } from "../helpers/constants.js";
 const bins = async (req, res) => {
   const query = req.query;
 
+  const routeCondition = req.query.routeid ? `routid=${req.query.routeid}` : "";
+  const centerCondition = req.query.centerid
+    ? `centerid=${req.query.centerid}`
+    : "";
+  const binTypeCondition = req.query.bintype
+    ? `bintypeid=${req.query.bintypeid}`
+    : "";
+  const binStatusCondition = req.query.status || "all";
+
   //Query for empted bins only
   const dbQuery = `SELECT geoid, bydevice FROM tcn_poi_schedule WHERE serv_time BETWEEN ${
     query.from ? `"${query.from}"` : false || `"${TODAY} 00:00"`
   } AND ${query.to ? `"${query.to}"` : false || "(select current_timestamp)"}`;
 
   //Query for all bins
-  const queryAllBins = `SELECT id, description, centerid, routid, bintypeid FROM tc_geofences WHERE attributes LIKE '%"bins": "yes"%'`;
+  const queryAllBins = `SELECT id, description, centerid, routid, bintypeid FROM tc_geofences WHERE attributes LIKE '%"bins": "yes"%' ${
+    routeCondition ? `AND ${routeCondition}` : ""
+  } ${centerCondition ? `AND ${centerCondition}` : ""} ${
+    binTypeCondition ? `AND ${binTypeCondition}` : ""
+  }`;
 
   try {
     const allBins = await db.query(queryAllBins);
@@ -29,24 +42,34 @@ const bins = async (req, res) => {
         if (dataObject[bin.id]) {
           return {
             ...bin,
-            status: "empted",
+            empted: true,
           };
         } else {
           return {
             ...bin,
-            status: "notEmpted",
+            empted: false,
           };
         }
       });
     }
 
-    res.json(response);
+    res.json(
+      response.filter((item) => {
+        if (binStatusCondition === "empted") {
+          return item.empted === true;
+        } else if (binStatusCondition === "unempted") {
+          return item.empted === false;
+        } else {
+          return true;
+        }
+      })
+    );
   } catch (e) {}
 };
 
 const binById = async (req, res) => {
   //GET TODAY STATUS
-  const { id } = req.params;
+  const id = parseInt(req.params.id) || "0";
 
   const condition = `SELECT tcn_poi_schedule.serv_time FROM tcn_poi_schedule WHERE serv_time BETWEEN "${TODAY} 00:00" AND (select current_timestamp) AND tcn_poi_schedule.geoid=${id}`;
 
@@ -81,28 +104,28 @@ const binById = async (req, res) => {
       empted: last7DaysStatus.some(
         (date) => date.serv_time.toISOString().split("T")[0] === day
       ),
+      emptedTime: last7DaysStatus
+        .filter((date) => date.serv_time.toISOString().split("T")[0] === day)
+        .map((ele) => ele.serv_time)[0],
     };
   });
 
   const response = {
-    bin: data[0].map((ele) => ({ ...ele, phone: `${ele.phone}` })),
+    bin: data[0].map((ele) => ({
+      ...ele,
+      phone: `${ele.phone}`,
+      position: {
+        longitude: ele.position.split(" ")[0].split("(")[1],
+        latitude: ele.position.split(" ")[1].split(",")[0],
+      },
+    })),
     last7Days: lastSevenDaysCheck,
   };
-  
+
   res.json(response);
 };
 
 const binReports = async (req, res) => {
-  // if (Object.keys(req.query).length) {
-  //   let WHERE = "WHERE";
-  //   Object.keys(req.query).forEach((key, index) => {
-  //     WHERE += ` ${key}=${req.query[key]} ${
-  //       index < Object.keys(req.query).length - 1 ? "AND " : ""
-  //     }`;
-  //   });
-  //   query += WHERE;
-  // }
-
   const query = req.query;
 
   let dbQuery = `SELECT * FROM tcn_g_reprots WHERE time BETWEEN ${
@@ -114,4 +137,24 @@ const binReports = async (req, res) => {
   res.json({ message: data });
 };
 
-export { bins, binById, binReports };
+const binCategorized = async (req, res) => {
+  const query = req.query;
+  const category = req.params.id;
+
+  //Query for empted bins only
+  const dbQuery = `SELECT tcn_poi_schedule.geoid, tcn_poi_schedule.bydevice, tc_geofences.description FROM tcn_poi_schedule
+                  RIGHT JOIN tc_geofences ON tcn_poi_schedule.geoid=tc_geofences.id 
+                  WHERE tcn_poi_schedule.serv_time BETWEEN ${
+                    query.from ? `"${query.from}"` : false || `"${TODAY} 00:00"`
+                  } AND ${
+    query.to ? `"${query.to}"` : false || "(select current_timestamp)"
+  }`;
+  console.log(dbQuery);
+  //Query for all bins
+  const queryAllBins = `SELECT id, description, centerid, routid, bintypeid FROM tc_geofences WHERE attributes LIKE '%"bins": "yes"%'`;
+
+  const data = await db.query(dbQuery);
+
+  res.json(data);
+};
+export { bins, binById, binReports, binCategorized };
