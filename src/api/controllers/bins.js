@@ -139,22 +139,94 @@ const binReports = async (req, res) => {
 
 const binCategorized = async (req, res) => {
   const query = req.query;
-  const category = req.params.id;
+  console.log(query);
 
   //Query for empted bins only
   const dbQuery = `SELECT tcn_poi_schedule.geoid, tcn_poi_schedule.bydevice, tc_geofences.description FROM tcn_poi_schedule
-                  RIGHT JOIN tc_geofences ON tcn_poi_schedule.geoid=tc_geofences.id 
+                  RIGHT JOIN tc_geofences ON tcn_poi_schedule.geoid=tc_geofences.id
                   WHERE tcn_poi_schedule.serv_time BETWEEN ${
                     query.from ? `"${query.from}"` : false || `"${TODAY} 00:00"`
                   } AND ${
     query.to ? `"${query.to}"` : false || "(select current_timestamp)"
   }`;
-  console.log(dbQuery);
+  console.log("DB QUERY", dbQuery);
   //Query for all bins
-  const queryAllBins = `SELECT id, description, centerid, routid, bintypeid FROM tc_geofences WHERE attributes LIKE '%"bins": "yes"%'`;
+  const queryAllBins = `SELECT tc_geofences.id, tc_geofences.description, tc_geofences.area AS position,tcn_centers.center_name, tcn_routs.rout_code, tc_drivers.name AS driverName,         tc_drivers.phone, tcn_bin_type.bintype FROM tc_geofences
+                        JOIN tcn_centers ON tc_geofences.centerid=tcn_centers.id
+                        JOIN tcn_routs ON tc_geofences.routid=tcn_routs.id
+                        JOIN tc_drivers ON tcn_routs.driverid=tc_drivers.id
+                        JOIN tcn_bin_type ON tc_geofences.bintypeid=tcn_bin_type.id 
+                        WHERE tc_geofences.attributes LIKE '%"bins": "yes"%'`;
 
-  const data = await db.query(dbQuery);
+  const groupedBy = (data, category) => {
+    const byGroup = {};
 
-  res.json(data);
+    data.forEach((item) => {
+      if (byGroup[item[category]]) {
+        byGroup[item[category]].total += 1;
+        byGroup[item[category]].empted += Number(item.empted);
+        byGroup[item[category]].unempted += Number(!item.empted);
+        return;
+      }
+      byGroup[item[category]] = {
+        [req.params.category]: item[category],
+        total: 1,
+        empted: Number(item.empted),
+        unempted: Number(!item.empted),
+      };
+    });
+    const byGroupList = [];
+    for (let key in byGroup) {
+      byGroupList.push(byGroup[key]);
+    }
+
+    res.send(byGroupList);
+  };
+
+  try {
+    const allBins = await db.query(queryAllBins);
+
+    const data = await db.query(dbQuery);
+
+    const dataObject = {};
+
+    data.forEach((element) => {
+      dataObject[element.geoid] = element;
+    });
+
+    let response = [];
+    if (data?.length > 0) {
+      response = allBins.map((bin) => {
+        if (dataObject[bin.id]) {
+          return {
+            ...bin,
+            empted: true,
+          };
+        } else {
+          return {
+            ...bin,
+            empted: false,
+          };
+        }
+      });
+    }
+
+    switch (req.params.category) {
+      case "bintype":
+        groupedBy(response, "bintype");
+        break;
+      case "center":
+        groupedBy(response, "center_name");
+        break;
+      case "route":
+        groupedBy(response, "rout_code");
+        break;
+      default:
+        res.status(204).end();
+        break;
+    }
+  } catch (e) {
+    res.status(500).end();
+  }
 };
 export { bins, binById, binReports, binCategorized };
