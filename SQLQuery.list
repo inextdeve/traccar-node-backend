@@ -1,0 +1,6 @@
+GET ALL SWEEPERS
+select  * from  tc_devices where tc_devices.groupid='5' or tc_devices.name like '%14'
+-
+DEVICES EVENTS
+SELECT count(DISTINCT tc_events.deviceid) AS completed from  tc_events inner join tc_user_device on tc_events.deviceid = tc_user_device.deviceid where tc_events.eventtime BETWEEN "${TODAY} 00:00" AND (SELECT current_timestamp)
+-
