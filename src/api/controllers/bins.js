@@ -4,7 +4,7 @@ import { TODAY, LAST7DAYS, YESTERDAY, LASTWEEK } from "../helpers/constants.js";
 
 const bins = async (req, res) => {
   const query = req.query;
-
+  console.log("test");
   const routeCondition = req.query.routeid ? `routid=${req.query.routeid}` : "";
   const centerCondition = req.query.centerid
     ? `centerid=${req.query.centerid}`
