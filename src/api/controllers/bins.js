@@ -5,16 +5,18 @@ import { TODAY, LAST7DAYS, YESTERDAY, LASTWEEK } from "../helpers/constants.js";
 const bins = async (req, res) => {
   const query = req.query;
   console.log("test");
-  const routeCondition = req.query.routeid ? `routid=${req.query.routeid}` : "";
+  const routeCondition = req.query.routeid
+    ? `tc_geofences.routid=${req.query.routeid}`
+    : "";
   const centerCondition = req.query.centerid
-    ? `centerid=${req.query.centerid}`
+    ? `tcn_centers.id=${req.query.centerid}`
     : "";
   const binTypeCondition = req.query.bintypeid
     ? `tcn_bin_type.id=${req.query.bintypeid}`
     : "";
   const binStatusCondition = req.query.status || "all";
 
-  console.log("Condition", binTypeCondition);
+  console.log("Condition", routeCondition);
 
   //Query for empted bins only
   const dbQuery = `SELECT geoid, bydevice FROM tcn_poi_schedule WHERE serv_time BETWEEN ${
@@ -150,7 +152,6 @@ const binReports = async (req, res) => {
   } AND ${query.to ? `"${query.to}"` : false || "(select current_timestamp)"}`;
 
   const data = (await db.query(dbQuery)).map((item) => {
-    console.log(JSON.parse(item.imgafter) || "NOIMAG");
     return {
       ...item,
       img: item.img ? `https://bins.rcj.care/${JSON.parse(item.img)[0]}` : null,
@@ -219,6 +220,7 @@ const binCategorized = async (req, res) => {
         byGroup[item[category]].phone = `${parseInt(item.phone)}`;
         byGroup[item[category]].shift = "morning";
         byGroup[item[category]].routeId = item.routeId;
+        byGroup[item[category]].driver = item.driverName;
       }
 
       if (category === "bintype") {
