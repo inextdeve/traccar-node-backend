@@ -287,9 +287,16 @@ const binCategorized = async (req, res) => {
 };
 
 const summary = async (req, res) => {
+  const query = req.query;
   //Query for last 7 days bins status
   const dbQuery = `SELECT tcn_poi_schedule.geoid, tcn_poi_schedule.serv_time FROM tcn_poi_schedule
-                    WHERE tcn_poi_schedule.serv_time BETWEEN ${LASTWEEK} AND (SELECT current_timestamp)`;
+                    WHERE tcn_poi_schedule.serv_time BETWEEN ${
+                      query.from
+                        ? `"${query.from}"`
+                        : false || `"${LASTWEEK} 00:00"`
+                    } AND ${
+    query.to ? `"${query.to}"` : false || "(select current_timestamp)"
+  }`;
 
   //Query for all bins
   const queryAllBins = `SELECT COUNT(tc_geofences.id) AS counter FROM tc_geofences
@@ -301,20 +308,42 @@ const summary = async (req, res) => {
       db.query(dbQuery),
     ]);
 
-    const lastSevenDaysStatus = LAST7DAYS.map((day) => {
-      const empty_bin = data.filter(
-        (item) => item.serv_time.toISOString().split("T")[0] === day
-      ).length;
-      return {
-        date: day,
-        total: parseInt(allBins[0].counter),
-        empty_bin,
-        un_empty_bin: parseInt(allBins[0].counter) - empty_bin,
-      };
+    // const lastSevenDaysStatus = LAST7DAYS.map((day) => {
+    //   const empty_bin = data.filter(
+    //     (item) => item.serv_time.toISOString().split("T")[0] === day
+    //   ).length;
+    //   return {
+    //     date: day,
+    //     total: parseInt(allBins[0].counter),
+    //     empty_bin,
+    //     un_empty_bin: parseInt(allBins[0].counter) - empty_bin,
+    //   };
+    // });
+
+    const groupedByDate = {};
+
+    data.forEach((item) => {
+      const date = item.serv_time.toISOString().split("T")[0];
+      if (groupedByDate[date]) {
+        groupedByDate[date] += 1;
+        return;
+      }
+      groupedByDate[date] = 1;
     });
 
-    res.json(lastSevenDaysStatus);
+    const response = [];
+
+    for (let key in groupedByDate) {
+      response.push({
+        date: key,
+        total: parseInt(allBins[0].counter),
+        empty_bin: groupedByDate[key],
+        un_empty_bin: parseInt(allBins[0].counter) - groupedByDate[key],
+      });
+    }
+    res.json(response);
   } catch (error) {
+    console.log(error);
     res.status(500).end();
   }
 };
