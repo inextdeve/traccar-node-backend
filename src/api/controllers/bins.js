@@ -91,7 +91,7 @@ const binById = async (req, res) => {
 
   const dbQuery = `IF EXISTS (${condition})
                   THEN
-                    SELECT tcn_poi_schedule.geoid AS id, tcn_poi_schedule.serv_time, tcn_poi_schedule.VehicleID,tc_geofences.description, tc_geofences.area AS position,tcn_centers.center_name, tcn_routs.rout_code, tc_drivers.name AS driverName, tc_drivers.phone, tcn_bin_type.bintype FROM tcn_poi_schedule
+                    SELECT tcn_poi_schedule.geoid AS id_bin, tcn_poi_schedule.serv_time, tcn_poi_schedule.VehicleID,tc_geofences.description, tc_geofences.area AS position,tcn_centers.center_name, tcn_routs.rout_code, tc_drivers.name AS driverName, tc_drivers.phone, tcn_bin_type.bintype FROM tcn_poi_schedule
                     JOIN tc_geofences ON tcn_poi_schedule.geoid=tc_geofences.id
                     JOIN tcn_centers ON tc_geofences.centerid=tcn_centers.id
                     JOIN tcn_routs ON tc_geofences.routid=tcn_routs.id
@@ -130,10 +130,9 @@ const binById = async (req, res) => {
     bin: data[0].map((ele) => ({
       ...ele,
       phone: `${ele.phone}`,
-      position: {
-        longitude: ele.position.split(" ")[0].split("(")[1],
-        latitude: ele.position.split(" ")[1].split(",")[0],
-      },
+      latitude: ele.position.split(" ")[0].split("(")[1],
+      longitude: ele.position.split(" ")[1].split(",")[0],
+      status: !!ele.serv_time ? "empty" : "unempty",
     })),
     last7Days: lastSevenDaysCheck,
   };
@@ -307,6 +306,7 @@ const summary = async (req, res) => {
       db.query(queryAllBins),
       db.query(dbQuery),
     ]);
+    console.log(data[0]);
 
     const groupedByDate = {};
 
