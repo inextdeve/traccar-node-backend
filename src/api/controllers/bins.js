@@ -160,7 +160,7 @@ const binReports = async (req, res) => {
         : null,
       type: JSON.parse(item.type)[0],
       latitude: item.area.split(" ")[0].split("(")[1],
-      longitude: item.area.split(" ")[1].split("(")[0],
+      longitude: item.area.split(" ")[1].split("(")[0].split(",")[0],
     };
   });
 
@@ -297,7 +297,7 @@ const summary = async (req, res) => {
                     } AND ${
     query.to ? `"${query.to}"` : false || "(select current_timestamp)"
   }`;
-
+  console.log(dbQuery);
   //Query for all bins
   const queryAllBins = `SELECT COUNT(tc_geofences.id) AS counter FROM tc_geofences
                         WHERE tc_geofences.attributes LIKE '%"bins": "yes"%'`;
@@ -307,18 +307,6 @@ const summary = async (req, res) => {
       db.query(queryAllBins),
       db.query(dbQuery),
     ]);
-
-    // const lastSevenDaysStatus = LAST7DAYS.map((day) => {
-    //   const empty_bin = data.filter(
-    //     (item) => item.serv_time.toISOString().split("T")[0] === day
-    //   ).length;
-    //   return {
-    //     date: day,
-    //     total: parseInt(allBins[0].counter),
-    //     empty_bin,
-    //     un_empty_bin: parseInt(allBins[0].counter) - empty_bin,
-    //   };
-    // });
 
     const groupedByDate = {};
 
@@ -334,6 +322,10 @@ const summary = async (req, res) => {
     const response = [];
 
     for (let key in groupedByDate) {
+      //Skip the first day because is not full
+      // if (key === query.from.split("T")[0]) {
+      //   continue;
+      // }
       response.push({
         date: key,
         total: parseInt(allBins[0].counter),
