@@ -15,7 +15,7 @@ const washingCategorized = async (req, res) => {
     query.to ? `"${query.to}"` : false || "(select current_timestamp)"
   }`;
   //Query for all bins
-  const queryAllBins = `SELECT tc_geofences.id, tc_geofences.description, tc_geofences.area AS position,tcn_centers.center_name, tcn_routs.rout_code, tcn_routs.id AS route_id, tc_drivers.name AS driver, tc_drivers.phone, tcn_bin_type.bintype FROM tc_geofences
+  const queryAllBins = `SELECT tc_geofences.id, tc_geofences.description, tc_geofences.area AS position, tc_geofences.bintypeid AS binTypeId, tcn_centers.center_name, tc_geofences.centerid AS centerId, tcn_routs.rout_code, tcn_routs.id AS routeId, tc_drivers.name AS driverName, tc_drivers.phone, tcn_bin_type.bintype FROM tc_geofences
                           JOIN tcn_centers ON tc_geofences.centerid=tcn_centers.id
                           JOIN tcn_routs ON tc_geofences.routid=tcn_routs.id
                           JOIN tc_drivers ON tcn_routs.driverid=tc_drivers.id
@@ -33,15 +33,26 @@ const washingCategorized = async (req, res) => {
         return;
       }
       byGroup[item[category]] = {
-        route_id: item.route_id, //Route Prop
         [req.params.category]: item[category],
         total: 1,
         cleaned: Number(item.cleaned),
         not_cleaned: Number(!item.cleaned),
-        driver: item.driver, //Route Prop
-        phone: parseInt(item.phone), //Route Prop
-        shift: "morning", //Route Prop Fix It Depends on Time
       };
+
+      if (category === "rout_code") {
+        byGroup[item[category]].phone = `${parseInt(item.phone)}`;
+        byGroup[item[category]].shift = "morning";
+        byGroup[item[category]].routeId = item.routeId;
+        byGroup[item[category]].driver = item.driverName;
+      }
+
+      if (category === "bintype") {
+        byGroup[item[category]].binTypeId = item.binTypeId;
+      }
+
+      if (category === "center_name") {
+        byGroup[item[category]].centerId = item.centerId;
+      }
     });
     const byGroupList = [];
     for (let key in byGroup) {
