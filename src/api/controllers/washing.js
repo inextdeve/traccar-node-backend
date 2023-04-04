@@ -129,8 +129,8 @@ const summary = async (req, res) => {
       return {
         date: day,
         total: parseInt(allBins[0].counter),
-        washed,
-        unwashed: parseInt(allBins[0].counter) - washed,
+        cleaned,
+        not_cleaned: parseInt(allBins[0].counter) - cleaned,
       };
     });
 
