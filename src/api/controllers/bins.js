@@ -105,7 +105,7 @@ const binById = async (req, res) => {
 
   const data = await db.query(dbQuery);
 
-  const last7DaysQuery = `SELECT tcn_poi_schedule.serv_time, tcn_poi_schedule.VehicleID FROM tcn_poi_schedule WHERE tcn_poi_schedule.serv_time BETWEEN "${LASTWEEK}" AND (select current_timestamp) AND  tcn_poi_schedule.geoid=${id}`;
+  const last7DaysQuery = `SELECT tcn_poi_schedule.serv_time, tcn_poi_schedule.VehicleID AS emptied_by FROM tcn_poi_schedule WHERE tcn_poi_schedule.serv_time BETWEEN "${LASTWEEK}" AND (select current_timestamp) AND  tcn_poi_schedule.geoid=${id}`;
 
   const last7DaysStatus = await db.query(last7DaysQuery);
 
@@ -121,6 +121,9 @@ const binById = async (req, res) => {
       emptedTime: last7DaysStatus
         .filter((bin) => bin.serv_time.toISOString().split("T")[0] === day)
         .map((ele) => ele.serv_time)[0],
+      emptiedBy: last7DaysStatus.filter(
+        (bin) => bin.serv_time.toISOString().split("T")[0] === day
+      )[0]?.emptied_by,
     };
   });
 
