@@ -87,7 +87,7 @@ const binById = async (req, res) => {
 
   const dbQuery = `IF EXISTS (${condition})
                   THEN
-                    SELECT tcn_poi_schedule.geoid AS id_bin, tcn_poi_schedule.serv_time, tcn_poi_schedule.VehicleID,tc_geofences.description, tc_geofences.area AS position,tcn_centers.center_name, tcn_routs.rout_code, tc_drivers.name AS driverName, tc_drivers.phone, tcn_bin_type.bintype FROM tcn_poi_schedule
+                    SELECT tcn_poi_schedule.geoid AS id_bin, tcn_poi_schedule.serv_time, tcn_poi_schedule.VehicleID AS emptied_by,tc_geofences.description, tc_geofences.area AS position,tcn_centers.center_name, tcn_routs.rout_code, tc_drivers.name AS driverName, tc_drivers.phone AS driver_phone, tcn_bin_type.bintype FROM tcn_poi_schedule
                     JOIN tc_geofences ON tcn_poi_schedule.geoid=tc_geofences.id
                     JOIN tcn_centers ON tc_geofences.centerid=tcn_centers.id
                     JOIN tcn_routs ON tc_geofences.routid=tcn_routs.id
@@ -114,10 +114,10 @@ const binById = async (req, res) => {
     return {
       date: day,
       empted: last7DaysStatus.some(
-        (date) => date.serv_time.toISOString().split("T")[0] === day
+        (bin) => bin.serv_time.toISOString().split("T")[0] === day
       ),
       emptedTime: last7DaysStatus
-        .filter((date) => date.serv_time.toISOString().split("T")[0] === day)
+        .filter((bin) => bin.serv_time.toISOString().split("T")[0] === day)
         .map((ele) => ele.serv_time)[0],
     };
   });
@@ -125,14 +125,14 @@ const binById = async (req, res) => {
   const response = [
     ...data[0].map((ele) => ({
       ...ele,
-      phone: `${ele.phone}`,
+      driver_phone: `${ele.driver_phone}`,
       latitude: ele.position.split(" ")[0].split("(")[1],
       longitude: ele.position.split(" ")[1].split(",")[0],
       status: !!ele.serv_time ? "empty" : "unempty",
     })),
     { last7Days: lastSevenDaysCheck },
   ];
-
+  console.log(response);
   res.json(response);
 };
 
