@@ -23,7 +23,7 @@ const washingCategorized = async (req, res) => {
                           WHERE tc_geofences.attributes LIKE '%"bins": "yes"%'`;
 
   const groupedBy = (data, category) => {
-    const byGroup = {};
+    const byGroup = new Object();
 
     data.forEach((item) => {
       if (byGroup[item[category]]) {
@@ -54,7 +54,7 @@ const washingCategorized = async (req, res) => {
         byGroup[item[category]].centerId = item.centerId;
       }
     });
-    const byGroupList = [];
+    const byGroupList = new Array();
     for (let key in byGroup) {
       byGroupList.push(byGroup[key]);
     }
@@ -67,13 +67,13 @@ const washingCategorized = async (req, res) => {
 
     const data = await db.query(dbQuery);
 
-    const dataObject = {};
+    const dataObject = new Object();
 
     data.forEach((element) => {
       dataObject[element.geoid] = element;
     });
 
-    let response = [];
+    let response = new Array();
     if (data?.length > 0) {
       response = allBins.map((bin) => {
         if (dataObject[bin.id]) {

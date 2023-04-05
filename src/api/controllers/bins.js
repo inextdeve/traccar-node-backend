@@ -44,7 +44,7 @@ const bins = async (req, res) => {
       dataObject[element.geoid] = element;
     });
 
-    let response = [];
+    let response = new Array();
 
     response = allBins.map((bin) => {
       if (dataObject[bin.id_bin]) {
@@ -166,7 +166,6 @@ const binReports = async (req, res) => {
 const binCategorized = async (req, res) => {
   const query = req.query;
   const category = req.params.category;
-  console.log(query);
 
   //Query for empted bins only
   const dbQuery = `SELECT tcn_poi_schedule.geoid, tcn_poi_schedule.bydevice, tc_geofences.description FROM tcn_poi_schedule
@@ -196,7 +195,7 @@ const binCategorized = async (req, res) => {
                         }`;
 
   const groupedBy = (data, category) => {
-    const byGroup = {};
+    const byGroup = new Object();
 
     data.forEach((item) => {
       if (byGroup[item[category]]) {
@@ -227,7 +226,7 @@ const binCategorized = async (req, res) => {
         byGroup[item[category]].centerId = item.centerId;
       }
     });
-    const byGroupList = [];
+    const byGroupList = new Array();
     for (let key in byGroup) {
       byGroupList.push(byGroup[key]);
     }
@@ -240,13 +239,13 @@ const binCategorized = async (req, res) => {
 
     const data = await db.query(dbQuery);
 
-    const dataObject = {};
+    const dataObject = new Object();
 
     data.forEach((element) => {
       dataObject[element.geoid] = element;
     });
 
-    let response = [];
+    let response = new Array();
     if (data?.length > 0) {
       response = allBins.map((bin) => {
         if (dataObject[bin.id]) {
@@ -303,9 +302,8 @@ const summary = async (req, res) => {
       db.query(queryAllBins),
       db.query(dbQuery),
     ]);
-    console.log(data[0]);
 
-    const groupedByDate = {};
+    const groupedByDate = new Object();
 
     data.forEach((item) => {
       const date = item.serv_time.toISOString().split("T")[0];
@@ -316,7 +314,7 @@ const summary = async (req, res) => {
       groupedByDate[date] = 1;
     });
 
-    const response = [];
+    const response = new Array();
 
     for (let key in groupedByDate) {
       //Skip the first day because is not full
