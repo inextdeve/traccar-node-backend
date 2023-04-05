@@ -113,7 +113,7 @@ const binById = async (req, res) => {
   const lastSevenDaysCheck = LAST7DAYS.map((day) => {
     return {
       date: day,
-      empted: last7DaysStatus.some(
+      status: last7DaysStatus.some(
         (bin) => bin.serv_time.toISOString().split("T")[0] === day
       )
         ? "empty"
