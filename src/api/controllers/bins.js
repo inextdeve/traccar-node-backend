@@ -1,6 +1,5 @@
-import moment from "moment";
 import { db } from "../db/config/index.js";
-import { TODAY, LAST7DAYS, YESTERDAY, LASTWEEK } from "../helpers/constants.js";
+import { TODAY, LAST7DAYS, LASTWEEK } from "../helpers/constants.js";
 
 const bins = async (req, res) => {
   const query = req.query;
@@ -38,7 +37,7 @@ const bins = async (req, res) => {
 
     const data = await db.query(dbQuery);
 
-    const dataObject = {};
+    const dataObject = new Object();
 
     data.forEach((element) => {
       dataObject[element.geoid] = element;
@@ -96,7 +95,7 @@ const binById = async (req, res) => {
                     JOIN tcn_bin_type ON tc_geofences.bintypeid=tcn_bin_type.id
                     WHERE tcn_poi_schedule.serv_time BETWEEN "${TODAY} 00:00" AND (select current_timestamp) AND tcn_poi_schedule.geoid=${id} AND tc_geofences.attributes LIKE '%"bins": "yes"%';
                   ELSE
-                    SELECT tc_geofences.id, tc_geofences.description, tc_geofences.area AS position, tcn_centers.center_name, tcn_routs.rout_code, tc_drivers.name AS driverName, tc_drivers.phone, tcn_bin_type.bintype FROM tc_geofences
+                    SELECT tc_geofences.id AS id_bin, tc_geofences.description, tc_geofences.area AS position, tcn_centers.center_name AS center, tcn_routs.rout_code AS route, tc_drivers.name AS driver, tc_drivers.phone AS driver_phone, tcn_bin_type.bintype FROM tc_geofences
                     JOIN tcn_centers ON tc_geofences.centerid=tcn_centers.id
                     JOIN tcn_routs ON tc_geofences.routid=tcn_routs.id
                     JOIN tc_drivers ON tcn_routs.driverid=tc_drivers.id
@@ -123,16 +122,16 @@ const binById = async (req, res) => {
     };
   });
 
-  const response = {
-    bin: data[0].map((ele) => ({
+  const response = [
+    ...data[0].map((ele) => ({
       ...ele,
       phone: `${ele.phone}`,
       latitude: ele.position.split(" ")[0].split("(")[1],
       longitude: ele.position.split(" ")[1].split(",")[0],
       status: !!ele.serv_time ? "empty" : "unempty",
     })),
-    last7Days: lastSevenDaysCheck,
-  };
+    { last7Days: lastSevenDaysCheck },
+  ];
 
   res.json(response);
 };

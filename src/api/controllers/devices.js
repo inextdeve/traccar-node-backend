@@ -5,7 +5,7 @@ import { TODAY, LAST7DAYS, YESTERDAY, LASTWEEK } from "../helpers/constants.js";
 const summary = async (req, res) => {
   const query = req.query;
 
-  const dbQuery = `SELECT count(DISTINCT tc_events.deviceid) AS completed, eventtime from  tc_events
+  const dbQuery = `SELECT count(DISTINCT tc_events.deviceid) AS exited, eventtime AS eventTime from  tc_events
                   inner join tc_user_device on tc_events.deviceid = tc_user_device.deviceid
                   where tc_events.eventtime BETWEEN ${
                     query.from ? `"${query.from}"` : false || `"${TODAY} 00:00"`
@@ -14,13 +14,21 @@ const summary = async (req, res) => {
   }
                   GROUP BY DATE_FORMAT(tc_events.eventtime, '%Y-%m-%d')
                   `;
+  const totalQuery = "SELECT COUNT(id) AS total from tc_devices";
 
   try {
-    const data = (await db.query(dbQuery)).map((element) => ({
+    const [total, data] = await Promise.all([
+      db.query(totalQuery),
+      db.query(dbQuery),
+    ]);
+    const response = data.map((element) => ({
       ...element,
-      completed: parseInt(element.completed),
+      exited: parseInt(element.exited),
+      notExited: parseInt(total[0].total) - parseInt(element.exited),
+      total: parseInt(total[0].total),
     }));
-    res.json(data);
+
+    res.json(response);
   } catch (error) {
     res.status(500).end;
   }
