@@ -93,7 +93,7 @@ const binById = async (req, res) => {
                     JOIN tcn_routs ON tc_geofences.routid=tcn_routs.id
                     JOIN tc_drivers ON tcn_routs.driverid=tc_drivers.id
                     JOIN tcn_bin_type ON tc_geofences.bintypeid=tcn_bin_type.id
-                    WHERE tcn_poi_schedule.serv_time BETWEEN "${TODAY} 00:00" AND (select current_timestamp) AND tcn_poi_schedule.geoid=${id} AND tc_geofences.attributes LIKE '%"bins": "yes"%';
+                    WHERE tcn_poi_schedule.serv_time BETWEEN "${TODAY} 00:00" AND (select current_timestamp) AND tcn_poi_schedule.geoid=${id} AND tc_geofences.attributes LIKE '%"bins": "yes"%' LIMIT 1;
                   ELSE
                     SELECT tc_geofences.id AS id_bin, tc_geofences.description, tc_geofences.area AS position, tcn_centers.center_name AS center, tcn_routs.rout_code AS route, tc_drivers.name AS driver, tc_drivers.phone AS driver_phone, tcn_bin_type.bintype FROM tc_geofences
                     JOIN tcn_centers ON tc_geofences.centerid=tcn_centers.id
@@ -115,7 +115,9 @@ const binById = async (req, res) => {
       date: day,
       empted: last7DaysStatus.some(
         (bin) => bin.serv_time.toISOString().split("T")[0] === day
-      ),
+      )
+        ? "empty"
+        : "unempty",
       emptedTime: last7DaysStatus
         .filter((bin) => bin.serv_time.toISOString().split("T")[0] === day)
         .map((ele) => ele.serv_time)[0],
@@ -132,7 +134,6 @@ const binById = async (req, res) => {
     })),
     { last7Days: lastSevenDaysCheck },
   ];
-  console.log(response);
   res.json(response);
 };
 
