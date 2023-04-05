@@ -4,7 +4,7 @@ import { TODAY, LAST7DAYS, YESTERDAY, LASTWEEK } from "../helpers/constants.js";
 
 const bins = async (req, res) => {
   const query = req.query;
-  console.log("test");
+
   const routeCondition = req.query.routeid
     ? `tc_geofences.routid=${req.query.routeid}`
     : "";
@@ -16,12 +16,10 @@ const bins = async (req, res) => {
     : "";
   const binStatusCondition = req.query.status || "all";
 
-  console.log("Condition", routeCondition);
-
   //Query for empted bins only
   const dbQuery = `SELECT geoid, bydevice FROM tcn_poi_schedule WHERE serv_time BETWEEN ${
     query.from ? `"${query.from}"` : false || `"${TODAY} 00:00"`
-  } AND ${query.to ? `"${query.to}"` : false || "(select current_timestamp)"}`;
+  } AND ${query.to ? `"${query.to}"` : false || "(SELECT current_timestamp)"}`;
 
   //Query for all bins
   const queryAllBins = `SELECT tc_geofences.id AS id_bin, tc_geofences.description, tc_geofences.area AS position, tcn_centers.center_name, tcn_routs.rout_code AS route, tcn_bin_type.bintype
@@ -34,7 +32,7 @@ const bins = async (req, res) => {
                         } ${centerCondition ? `AND ${centerCondition}` : ""} ${
     binTypeCondition ? `AND ${binTypeCondition}` : ""
   }`;
-  console.log(queryAllBins);
+
   try {
     const allBins = await db.query(queryAllBins);
 
@@ -47,27 +45,26 @@ const bins = async (req, res) => {
     });
 
     let response = [];
-    if (data?.length > 0) {
-      response = allBins.map((bin) => {
-        if (dataObject[bin.id_bin]) {
-          return {
-            ...bin,
-            latitude: bin.position.split(" ")[0].split("(")[1],
-            longitude: bin.position.split(" ")[1].split(",")[0],
-            status: "empty",
-            empted: true,
-          };
-        } else {
-          return {
-            ...bin,
-            latitude: bin.position.split(" ")[0].split("(")[1],
-            longitude: bin.position.split(" ")[1].split(",")[0],
-            status: "unempty",
-            empted: false,
-          };
-        }
-      });
-    }
+
+    response = allBins.map((bin) => {
+      if (dataObject[bin.id_bin]) {
+        return {
+          ...bin,
+          latitude: bin.position.split(" ")[0].split("(")[1],
+          longitude: bin.position.split(" ")[1].split(",")[0],
+          status: "empty",
+          empted: true,
+        };
+      } else {
+        return {
+          ...bin,
+          latitude: bin.position.split(" ")[0].split("(")[1],
+          longitude: bin.position.split(" ")[1].split(",")[0],
+          status: "unempty",
+          empted: false,
+        };
+      }
+    });
 
     res.json(
       response.filter((item) => {
