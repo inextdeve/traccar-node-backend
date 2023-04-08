@@ -51,8 +51,9 @@ const kpi = async (req, res) => {
         db.query(countSweepers),
       ])
     ).map((ele) => {
-      if (ele[0]?.completed) {
-        return { completed: parseInt(ele[0]?.completed) };
+      
+      if (ele[0].hasOwnProperty("completed")) {
+        return { completed: parseInt(ele[0].completed) };
       }
       return { count: parseInt(ele[0].count) };
     });
