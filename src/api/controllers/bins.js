@@ -249,21 +249,20 @@ const binCategorized = async (req, res) => {
     });
 
     let response = new Array();
-    if (data?.length > 0) {
-      response = allBins.map((bin) => {
-        if (dataObject[bin.id]) {
-          return {
-            ...bin,
-            empty_bin: true,
-          };
-        } else {
-          return {
-            ...bin,
-            empty_bin: false,
-          };
-        }
-      });
-    }
+
+    response = allBins.map((bin) => {
+      if (dataObject[bin.id]) {
+        return {
+          ...bin,
+          empty_bin: true,
+        };
+      } else {
+        return {
+          ...bin,
+          empty_bin: false,
+        };
+      }
+    });
 
     switch (req.params.category) {
       case "bintype":
