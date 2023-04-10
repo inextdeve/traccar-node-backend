@@ -7,6 +7,11 @@ import auth from "../middlewares/auth.js";
 
 const router = express.Router();
 router.use(auth);
+router.use((req, _, next) => {
+  if (!req.query.from)
+    req.query.from = new Date().toISOString().split("T")[0] + " 00:00";
+  next();
+});
 
 router.use("/bins", binsRouter);
 router.use("/washing", washingRouter);

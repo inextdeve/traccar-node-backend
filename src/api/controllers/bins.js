@@ -16,9 +16,9 @@ const bins = async (req, res) => {
   const binStatusCondition = req.query.status || "all";
 
   //Query for empted bins only
-  const dbQuery = `SELECT geoid, bydevice FROM tcn_poi_schedule WHERE serv_time BETWEEN ${
-    query.from ? `"${query.from}"` : false || `"${TODAY} 00:00"`
-  } AND ${query.to ? `"${query.to}"` : false || "(SELECT current_timestamp)"}`;
+  const dbQuery = `SELECT geoid, bydevice FROM tcn_poi_schedule WHERE serv_time BETWEEN "${
+    query.from
+  }" AND ${query.to ? `"${query.to}"` : false || "(SELECT current_timestamp)"}`;
 
   //Query for all bins
   const queryAllBins = `SELECT tc_geofences.id AS id_bin, tc_geofences.description, tc_geofences.area AS position, tcn_centers.center_name, tcn_routs.rout_code AS route, tcn_bin_type.bintype
@@ -83,7 +83,7 @@ const binById = async (req, res) => {
   //GET TODAY STATUS
   const id = parseInt(req.params.id) || "0";
 
-  const condition = `SELECT tcn_poi_schedule.serv_time FROM tcn_poi_schedule WHERE serv_time BETWEEN "${TODAY} 00:00" AND (select current_timestamp) AND tcn_poi_schedule.geoid=${id}`;
+  const condition = `SELECT tcn_poi_schedule.serv_time FROM tcn_poi_schedule WHERE serv_time BETWEEN "${req.query.from}" AND (select current_timestamp) AND tcn_poi_schedule.geoid=${id}`;
 
   const dbQuery = `IF EXISTS (${condition})
                   THEN
@@ -93,7 +93,7 @@ const binById = async (req, res) => {
                     JOIN tcn_routs ON tc_geofences.routid=tcn_routs.id
                     JOIN tc_drivers ON tcn_routs.driverid=tc_drivers.id
                     JOIN tcn_bin_type ON tc_geofences.bintypeid=tcn_bin_type.id
-                    WHERE tcn_poi_schedule.serv_time BETWEEN "${TODAY} 00:00" AND (select current_timestamp) AND tcn_poi_schedule.geoid=${id} AND tc_geofences.attributes LIKE '%"bins": "yes"%' LIMIT 1;
+                    WHERE tcn_poi_schedule.serv_time BETWEEN "${req.query.from}" AND (select current_timestamp) AND tcn_poi_schedule.geoid=${id} AND tc_geofences.attributes LIKE '%"bins": "yes"%' LIMIT 1;
                   ELSE
                     SELECT tc_geofences.id AS id_bin, tc_geofences.description, tc_geofences.area AS position, tcn_centers.center_name AS center, tcn_routs.rout_code AS route, tc_drivers.name AS driver, tc_drivers.phone AS driver_phone, tcn_bin_type.bintype FROM tc_geofences
                     JOIN tcn_centers ON tc_geofences.centerid=tcn_centers.id
@@ -146,9 +146,9 @@ const binReports = async (req, res) => {
   let dbQuery = `SELECT tcn_g_reprots.id,tcn_g_reprots.phone, tcn_g_reprots.username, tcn_g_reprots.description, tcn_g_reprots.idbin AS id_bin, tcn_g_reprots.time, tcn_g_reprots.img, tcn_g_reprots.imgafter, tcn_g_reprots.type, tcn_g_reprots.status, tc_geofences.area, tc_geofences.description AS description_bin, tcn_centers.center_name FROM tcn_g_reprots
   JOIN tc_geofences ON tcn_g_reprots.idbin = tc_geofences.id
   JOIN tcn_centers ON tc_geofences.centerid=tcn_centers.id
-  WHERE time BETWEEN ${
-    query.from ? `"${query.from}"` : false || `"${TODAY} 00:00"`
-  } AND ${query.to ? `"${query.to}"` : false || "(select current_timestamp)"}`;
+  WHERE time BETWEEN "${query.from}" AND ${
+    query.to ? `"${query.to}"` : false || "(select current_timestamp)"
+  }`;
 
   const data = (await db.query(dbQuery)).map((item) => {
     return {
@@ -173,9 +173,9 @@ const binCategorized = async (req, res) => {
   //Query for empted bins only
   const dbQuery = `SELECT tcn_poi_schedule.geoid, tcn_poi_schedule.bydevice, tc_geofences.description FROM tcn_poi_schedule
                   RIGHT JOIN tc_geofences ON tcn_poi_schedule.geoid=tc_geofences.id
-                  WHERE tcn_poi_schedule.serv_time BETWEEN ${
-                    query.from ? `"${query.from}"` : false || `"${TODAY} 00:00"`
-                  } AND ${
+                  WHERE tcn_poi_schedule.serv_time BETWEEN "${
+                    query.from
+                  }" AND ${
     query.to ? `"${query.to}"` : false || "(select current_timestamp)"
   }`;
   //Query for all bins
@@ -287,14 +287,11 @@ const summary = async (req, res) => {
   const query = req.query;
   //Query for last 7 days bins status
   const dbQuery = `SELECT tcn_poi_schedule.geoid, tcn_poi_schedule.serv_time FROM tcn_poi_schedule
-                    WHERE tcn_poi_schedule.serv_time BETWEEN ${
+                    WHERE tcn_poi_schedule.serv_time BETWEEN "${
                       query.from
-                        ? `"${query.from}"`
-                        : false || `"${LASTWEEK} 00:00"`
-                    } AND ${
+                    }" AND ${
     query.to ? `"${query.to}"` : false || "(select current_timestamp)"
   }`;
-  console.log(dbQuery);
   //Query for all bins
   const queryAllBins = `SELECT COUNT(tc_geofences.id) AS counter FROM tc_geofences
                         WHERE tc_geofences.attributes LIKE '%"bins": "yes"%'`;
