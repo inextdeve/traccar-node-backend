@@ -1,25 +1,34 @@
 import { db } from "../db/config/index.js";
-import { TODAY } from "../helpers/constants.js";
+import { countRate } from "../helpers/utils.js";
 
 const kpi = async (req, res) => {
+  const { query } = req;
   //Empted bins today
   const emptedBins = `SELECT COUNT(id) AS completed FROM tcn_poi_schedule
-                      WHERE serv_time BETWEEN "${TODAY} 00:00" AND (SELECT current_timestamp)`;
+                      WHERE serv_time BETWEEN "${query.from}" AND "${
+    query.from.split(" ")[0] + " 23:59"
+  }"`;
 
   //Washed bins today
   const washedBins = `SELECT COUNT(id) AS completed FROM tcn_posi_washing
-                      WHERE serv_time BETWEEN "${TODAY} 00:00" AND (SELECT current_timestamp)`;
+                      WHERE serv_time BETWEEN "${query.from}" AND "${
+    query.from.split(" ")[0] + " 23:59"
+  }"`;
 
   //Vehicle status
   const exitedVehicle = `SELECT count(DISTINCT tc_events.deviceid) AS completed from  tc_events
                           inner join tc_user_device on tc_events.deviceid = tc_user_device.deviceid
-                          where tc_events.eventtime BETWEEN "${TODAY} 00:00" AND (SELECT current_timestamp)
+                          where tc_events.eventtime BETWEEN "${
+                            query.from
+                          }" AND "${query.from.split(" ")[0] + " 23:59"}"
                           `;
 
   //Sweeper Status
   const exitedSweepers = `SELECT count(DISTINCT tc_events.deviceid) AS completed from  tc_events
                           inner join tc_devices on tc_events.deviceid = tc_devices.id
-                          WHERE tc_devices.groupid=5 AND tc_events.type = "geofenceExit" AND tc_events.eventtime BETWEEN "${TODAY} 00:00" AND (SELECT current_timestamp)
+                          WHERE tc_devices.groupid=5 AND tc_events.type = "geofenceExit" AND tc_events.eventtime BETWEEN "${
+                            query.from
+                          }" AND "${query.from.split(" ")[0] + " 23:59"}"
                           `;
 
   //Count All Bins
@@ -51,7 +60,6 @@ const kpi = async (req, res) => {
         db.query(countSweepers),
       ])
     ).map((ele) => {
-      
       if (ele[0].hasOwnProperty("completed")) {
         return { completed: parseInt(ele[0].completed) };
       }
@@ -60,32 +68,37 @@ const kpi = async (req, res) => {
 
     const response = [
       {
-        name: "emptedBinsStatus",
+        name: "Bins",
         total: allBins.count,
         completed: emptedStatus.completed,
         uncompleted: allBins.count - emptedStatus.completed,
       },
       {
-        name: "washedBinsStatus",
+        name: "Washing",
         total: allBins.count,
         completed: washingStatus.completed,
         uncompleted: allBins.count - washingStatus.completed,
       },
       {
-        name: "vehicleStatus",
+        name: "Vehicle",
         total: allVehicle.count,
         completed: vehicleStatus.completed,
         uncompleted: allVehicle.count - vehicleStatus.completed,
       },
       {
-        name: "sweepersStatus",
+        name: "Sweepers",
         total: allSweepers.count,
         completed: sweepersStatus.completed,
         uncompleted: allSweepers.count - sweepersStatus.completed,
       },
     ];
 
-    res.json(response);
+    res.json(
+      response.map((item) => ({
+        ...item,
+        rate: countRate(item.total, item.completed).toFixed(2) + "%",
+      }))
+    );
   } catch (error) {
     res.status(500).end();
   }
