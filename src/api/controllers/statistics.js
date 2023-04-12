@@ -28,7 +28,7 @@ const kpi = async (req, res) => {
   const exitedSweepers = `SELECT SUM(JSON_EXTRACT(attributes, '$.distance')/1000) AS completed FROM tc_positions 
                           WHERE deviceid IN (SELECT id FROM tc_devices WHERE groupid = 5)
                           AND speed < 15
-                          AND DATE(fixtime) ='${query.from}'`;
+                          AND DATE(fixtime) ='${query.from.split("T")[0]}'`;
 
   //Count All Bins
   const countBins = `SELECT COUNT(id) AS count FROM tc_geofences WHERE attributes LIKE '%"bins": "yes"%'`;
