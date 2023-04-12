@@ -21,7 +21,7 @@ const kpi = async (req, res) => {
                           inner join tc_user_device on tc_events.deviceid = tc_user_device.deviceid
                           where tc_events.eventtime BETWEEN "${
                             query.from
-                          }" AND "${query.from.split("T")[0] + " 23:59"}"
+                          }" AND "${query.from.split("T")[0] + " 23:59"}" and tc_events.type="geofenceExit"
                           `;
 
   //Sweeper Status
