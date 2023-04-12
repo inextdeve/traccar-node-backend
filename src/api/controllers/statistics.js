@@ -74,9 +74,9 @@ const kpi = async (req, res) => {
       },
       {
         name: "Washing",
-        total: allBins.count / 30,
+        total: Math.round(allBins.count / 30),
         completed: washingStatus.completed,
-        uncompleted: Math.round(allBins.count / 30 - washingStatus.completed),
+        uncompleted: Math.round(allBins.count / 30) - washingStatus.completed,
       },
       {
         name: "Vehicle",
