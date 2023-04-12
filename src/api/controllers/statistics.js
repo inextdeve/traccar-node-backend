@@ -4,7 +4,6 @@ import { countRate } from "../helpers/utils.js";
 const kpi = async (req, res) => {
   const { query } = req;
 
-  console.log(query.from);
   //Empted bins today
   const emptedBins = `SELECT COUNT(id) AS completed FROM tcn_poi_schedule
                       WHERE serv_time BETWEEN "${query.from}" AND "${
@@ -26,12 +25,10 @@ const kpi = async (req, res) => {
                           `;
 
   //Sweeper Status
-  const exitedSweepers = `SELECT count(DISTINCT tc_events.deviceid) AS completed from  tc_events
-                          inner join tc_devices on tc_events.deviceid = tc_devices.id
-                          WHERE tc_devices.groupid=5 AND tc_events.type = "geofenceExit" AND tc_events.eventtime BETWEEN "${
-                            query.from
-                          }" AND "${query.from.split("T")[0] + " 23:59"}"
-                          `;
+  const exitedSweepers = `SELECT SUM(JSON_EXTRACT(attributes, '$.distance')/1000) AS completed FROM tc_positions 
+                          WHERE deviceid IN (SELECT id FROM tc_devices WHERE groupid = 5)
+                          AND speed < 15
+                          AND DATE(fixtime) ='${query.from}'`;
 
   //Count All Bins
   const countBins = `SELECT COUNT(id) AS count FROM tc_geofences WHERE attributes LIKE '%"bins": "yes"%'`;
@@ -89,9 +86,9 @@ const kpi = async (req, res) => {
       },
       {
         name: "Sweepers",
-        total: allSweepers.count,
+        total: 826,
         completed: sweepersStatus.completed,
-        uncompleted: allSweepers.count - sweepersStatus.completed,
+        uncompleted: 826 - sweepersStatus.completed,
       },
     ];
 
