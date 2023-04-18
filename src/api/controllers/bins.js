@@ -95,7 +95,7 @@ const binById = async (req, res) => {
                     JOIN tcn_bin_type ON tc_geofences.bintypeid=tcn_bin_type.id
                     WHERE tcn_poi_schedule.serv_time BETWEEN "${req.query.from}" AND (select current_timestamp) AND tcn_poi_schedule.geoid=${id} AND tc_geofences.attributes LIKE '%"bins": "yes"%' LIMIT 1;
                   ELSE
-                    SELECT tc_geofences.id AS id_bin, tc_geofences.description, tc_geofences.area AS position, tcn_centers.center_name AS center, tcn_routs.rout_code AS route, tc_drivers.name AS driver, tc_drivers.phone AS driver_phone, tcn_bin_type.bintype FROM tc_geofences
+                    SELECT tc_geofences.id AS id_bin, tc_geofences.description, tc_geofences.area AS position, tcn_centers.center_name AS center, tcn_routs.rout_code AS route, tc_drivers.name AS driverName, tc_drivers.phone AS driver_phone, tcn_bin_type.bintype FROM tc_geofences
                     JOIN tcn_centers ON tc_geofences.centerid=tcn_centers.id
                     JOIN tcn_routs ON tc_geofences.routid=tcn_routs.id
                     JOIN tc_drivers ON tcn_routs.driverid=tc_drivers.id
@@ -105,7 +105,7 @@ const binById = async (req, res) => {
 
   const data = await db.query(dbQuery);
 
-  const last7DaysQuery = `SELECT tcn_poi_schedule.serv_time, tcn_poi_schedule.VehicleID AS emptied_by FROM tcn_poi_schedule WHERE tcn_poi_schedule.serv_time BETWEEN "${LASTWEEK}" AND (select current_timestamp) AND  tcn_poi_schedule.geoid=${id}`;
+  const last7DaysQuery = `SELECT tcn_poi_schedule.serv_time, tcn_poi_schedule.VehicleID AS emptied_by FROM tcn_poi_schedule WHERE tcn_poi_schedule.serv_time BETWEEN "${LASTWEEK()}" AND (select current_timestamp) AND  tcn_poi_schedule.geoid=${id}`;
 
   const last7DaysStatus = await db.query(last7DaysQuery);
 
