@@ -135,7 +135,7 @@ const binById = async (req, res) => {
       longitude: ele.position.split(" ")[1].split(",")[0],
       status: !!ele.serv_time ? "empty" : "unempty",
     })),
-    { last7Days: lastSevenDaysCheck },
+    { last7Days: lastSevenDaysCheck.reverse() },
   ];
   res.json(response);
 };
