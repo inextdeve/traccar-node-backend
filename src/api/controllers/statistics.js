@@ -105,7 +105,7 @@ const kpi = async (req, res) => {
   }
 };
 
-const reports = async (req, res) => {
+const summary = async (req, res) => {
   const dbQueryReports = `SELECT 
   COUNT(*) AS total_rows,
   SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) AS Open,
@@ -124,12 +124,20 @@ const reports = async (req, res) => {
     db.query(dbQuerySweepers),
   ]);
 
-  console.log({
-    rep: reports[0],
-    swep: sweepers[0],
-  });
+  const response = [
+    {
+      name: "reports",
+      total: parseInt(reports[0].total_rows),
+      done: parseInt(reports[0].Closed),
+    },
+    {
+      name: "sweepers",
+      total: 100,
+      done: parseInt(sweepers[0].rate_percentage),
+    },
+  ];
 
-  res.json({ success: 200 });
+  res.json(response);
 };
 
-export { kpi, reports };
+export { kpi, summary };
