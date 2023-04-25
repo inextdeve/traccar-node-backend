@@ -21,7 +21,9 @@ const kpi = async (req, res) => {
                           inner join tc_user_device on tc_events.deviceid = tc_user_device.deviceid
                           where tc_events.eventtime BETWEEN "${
                             query.from
-                          }" AND "${query.from.split("T")[0] + " 23:59"}" and tc_events.type="geofenceExit"
+                          }" AND "${
+    query.from.split("T")[0] + " 23:59"
+  }" and tc_events.type="geofenceExit"
                           `;
 
   //Sweeper Status
@@ -103,4 +105,31 @@ const kpi = async (req, res) => {
   }
 };
 
-export { kpi };
+const reports = async (req, res) => {
+  const dbQueryReports = `SELECT 
+  COUNT(*) AS total_rows,
+  SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) AS Open,
+  SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) AS Closed
+  FROM tcn_g_reprots
+  WHERE time >= DATE_SUB(NOW(), INTERVAL 90 DAY)`;
+
+  const dbQuerySweepers = `SELECT AVG(speed) AS avg_speed, MAX(speed) AS max_speed, SUM(JSON_EXTRACT(attributes, '$.distance')/1000) AS total_distance, 826 * 7 AS total_routs, (SUM(JSON_EXTRACT(attributes, '$.distance')/1000)/(826 * 7))*100 AS rate_percentage
+  FROM tc_positions
+  WHERE deviceid IN (SELECT id FROM tc_devices WHERE groupid = 5)
+  AND speed < 15
+  AND fixtime >= DATE_SUB(NOW(), INTERVAL 7 DAY)`;
+
+  const [reports, sweepers] = await Promise.all([
+    db.query(dbQueryReports),
+    db.query(dbQuerySweepers),
+  ]);
+
+  console.log({
+    rep: reports[0],
+    swep: sweepers[0],
+  });
+
+  res.json({ success: 200 });
+};
+
+export { kpi, reports };
