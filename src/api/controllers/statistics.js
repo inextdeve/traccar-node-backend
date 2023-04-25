@@ -126,7 +126,7 @@ const summary = async (req, res) => {
 
   const response = [
     {
-      name: "reports",
+      name: "Reports",
       total: 100,
       done: parseInt(reports[0].Closed),
       rate: parseInt(
@@ -134,7 +134,7 @@ const summary = async (req, res) => {
       ),
     },
     {
-      name: "sweepers",
+      name: "Sweepers",
       total: 100,
       done: parseInt(sweepers[0].total_distance),
       rate: parseInt(sweepers[0].rate_percentage),
