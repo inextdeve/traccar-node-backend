@@ -111,7 +111,7 @@ const summary = async (req, res) => {
   SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) AS Open,
   SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) AS Closed
   FROM tcn_g_reprots
-  WHERE time >= DATE_SUB(NOW(), INTERVAL 90 DAY)`;
+  WHERE time >= DATE_SUB(NOW(), INTERVAL 7 DAY)`;
 
   const dbQuerySweepers = `SELECT AVG(speed) AS avg_speed, MAX(speed) AS max_speed, SUM(JSON_EXTRACT(attributes, '$.distance')/1000) AS total_distance, 826 * 7 AS total_routs, (SUM(JSON_EXTRACT(attributes, '$.distance')/1000)/(826 * 7))*100 AS rate_percentage
   FROM tc_positions
