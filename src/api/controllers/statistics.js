@@ -144,4 +144,45 @@ const summary = async (req, res) => {
   res.json(response);
 };
 
-export { kpi, summary };
+const vehicle = async (_, res) => {
+  const totalDistanceQuery = `SELECT SUM(JSON_EXTRACT(attributes, '$.distance'))/1000 AS totalDistance
+  FROM tc_positions
+  WHERE deviceid IN (
+    SELECT id
+    FROM tc_devices
+  )
+  AND fixtime >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)`;
+
+  const totalHoursQuery = `SELECT 
+  SUM(hours_difference) AS totalHours
+  FROM (
+    SELECT 
+      d.id AS device_id,
+      (MAX(JSON_EXTRACT(p.attributes, '$.hours')) - MIN(JSON_EXTRACT(p.attributes, '$.hours'))) / (60*60*1000) AS hours_difference
+    FROM 
+      tc_devices d
+      INNER JOIN tc_positions p ON d.id = p.deviceid
+    WHERE 
+      DATE(p.fixtime) BETWEEN DATE_SUB(NOW(), INTERVAL 7 DAY) AND NOW()
+    GROUP BY 
+      d.id
+  ) AS temp`;
+
+  const totalVehicleQuery = `SELECT COUNT(id) AS totalVehicle FROM tc_devices`;
+
+  const [totalDistance, totalHours, totalVehicle] = await Promise.all([
+    db.query(totalDistanceQuery),
+    db.query(totalHoursQuery),
+    db.query(totalVehicleQuery),
+  ]);
+
+  const response = {
+    totalDistance: Math.round(parseInt(totalDistance[0].totalDistance)),
+    totalHours: Math.round(parseInt(totalHours[0].totalHours)),
+    totalVehicle: Math.round(parseInt(totalVehicle[0].totalVehicle)),
+  };
+
+  res.json(response);
+};
+
+export { kpi, summary, vehicle };
