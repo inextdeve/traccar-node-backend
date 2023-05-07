@@ -1,6 +1,5 @@
 import { db } from "../db/config/index.js";
 import { countRate } from "../helpers/utils.js";
-import moment from "moment"
 
 const kpi = async (req, res) => {
   const { query } = req;
@@ -172,41 +171,46 @@ const vehicle = async (req, res) => {
 
   const totalVehicleQuery = `SELECT COUNT(id) AS totalVehicle FROM tc_devices`;
 
-  const onlineDevicesFetch = fetch("http://s1.rcj.care/api/devices",{
+  const onlineDevicesFetch = fetch("http://s1.rcj.care/api/devices", {
     headers: {
-      Authorization: "basic " + 'YWRtaW46YWRtaW4='
-    }
-  }).then(r=>r.json())
+      Authorization: "basic " + "YWRtaW46YWRtaW4=",
+    },
+  }).then((r) => r.json());
 
-//   const exitedVehiclesFetch = fetch(`http://38.54.114.166:3003/api/devices/summary?from=${new Date(moment().format("YYYY-MM-DD")).toISOString()}&to=${new Date().toISOString()}`, {
-//   "headers": {
-//     "authorization": "Bearer fb1329817e3ca2132d39134dd6d894b3"
-//   }
-// }).then(r=>r.json());
+  //   const exitedVehiclesFetch = fetch(`http://38.54.114.166:3003/api/devices/summary?from=${new Date(moment().format("YYYY-MM-DD")).toISOString()}&to=${new Date().toISOString()}`, {
+  //   "headers": {
+  //     "authorization": "Bearer fb1329817e3ca2132d39134dd6d894b3"
+  //   }
+  // }).then(r=>r.json());
 
-const exitedDevicesQuery = `SELECT count(DISTINCT tc_events.deviceid) AS completed from  tc_events
+  const exitedDevicesQuery = `SELECT count(DISTINCT tc_events.deviceid) AS completed from  tc_events
     inner join tc_user_device on tc_events.deviceid = tc_user_device.deviceid
-    where tc_events.eventtime BETWEEN "${
-    query.from
-    }" AND "${
+    where tc_events.eventtime BETWEEN "${query.from}" AND "${
     query.from.split("T")[0] + " 23:59"
-    }" and tc_events.type="geofenceExit"
+  }" and tc_events.type="geofenceExit"
 `;
 
-  const [totalDistance, totalHours, totalVehicle, onlineDevices, exitedVehicles] = await Promise.all([
+  const [
+    totalDistance,
+    totalHours,
+    totalVehicle,
+    onlineDevices,
+    exitedVehicles,
+  ] = await Promise.all([
     db.query(totalDistanceQuery),
     db.query(totalHoursQuery),
     db.query(totalVehicleQuery),
     onlineDevicesFetch,
-    db.query(exitedDevicesQuery)
+    db.query(exitedDevicesQuery),
   ]);
 
   const response = {
     totalDistance: Math.round(parseInt(totalDistance[0].totalDistance)),
     totalHours: Math.round(parseInt(totalHours[0].totalHours)),
     totalVehicle: Math.round(parseInt(totalVehicle[0].totalVehicle)),
-    onlineDevices: onlineDevices.filter(device => device.status==="online").length,
-    exitedVehicles: parseInt(exitedVehicles[0].completed)
+    onlineDevices: onlineDevices.filter((device) => device.status === "online")
+      .length,
+    exitedVehicles: parseInt(exitedVehicles[0].completed),
   };
 
   res.json(response);

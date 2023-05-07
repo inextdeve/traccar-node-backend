@@ -1,5 +1,5 @@
 import { db } from "../db/config/index.js";
-import { TODAY, LAST7DAYS, LASTWEEK } from "../helpers/constants.js";
+import { LAST7DAYS, LASTWEEK } from "../helpers/constants.js";
 
 const bins = async (req, res) => {
   const query = req.query;
@@ -110,7 +110,7 @@ const binById = async (req, res) => {
   const last7DaysStatus = await db.query(last7DaysQuery);
 
   //Check which day is empted and not
-  const lastSevenDaysCheck = LAST7DAYS.map((day) => {
+  const lastSevenDaysCheck = LAST7DAYS().map((day) => {
     return {
       date: day,
       status: last7DaysStatus.some(

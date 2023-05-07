@@ -1,5 +1,5 @@
 import { db } from "../db/config/index.js";
-import { TODAY, LAST7DAYS, YESTERDAY, LASTWEEK } from "../helpers/constants.js";
+import { TODAY, LAST7DAYS, LASTWEEK } from "../helpers/constants.js";
 
 const washingCategorized = async (req, res) => {
   const query = req.query;
