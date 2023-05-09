@@ -10,7 +10,7 @@ const washingCategorized = async (req, res) => {
                     WHERE tcn_posi_washing.serv_time BETWEEN ${
                       query.from
                         ? `"${query.from}"`
-                        : false || `"${TODAY} 00:00"`
+                        : false || `"${TODAY()} 00:00"`
                     } AND ${
     query.to ? `"${query.to}"` : false || "(select current_timestamp)"
   }`;
@@ -112,7 +112,7 @@ const washingCategorized = async (req, res) => {
 const summary = async (req, res) => {
   //Query for last 7 days washing status
   const dbQuery = `SELECT tcn_posi_washing.geoid, tcn_posi_washing.serv_time FROM tcn_posi_washing
-                    WHERE tcn_posi_washing.serv_time BETWEEN ${LASTWEEK} AND (SELECT current_timestamp)`;
+                    WHERE tcn_posi_washing.serv_time BETWEEN ${LASTWEEK()} AND (SELECT current_timestamp)`;
 
   //Query for all bins
   const queryAllBins = `SELECT COUNT(tc_geofences.id) AS counter FROM tc_geofences
@@ -122,7 +122,7 @@ const summary = async (req, res) => {
     const allBins = await db.query(queryAllBins);
     const data = await db.query(dbQuery);
 
-    const lastSevenDaysStatus = LAST7DAYS.map((day) => {
+    const lastSevenDaysStatus = LAST7DAYS().map((day) => {
       const cleaned = data.filter(
         (item) => item.serv_time.toISOString().split("T")[0] === day
       ).length;
