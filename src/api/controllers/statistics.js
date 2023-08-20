@@ -69,6 +69,12 @@ const kpi = async (req, res) => {
 
     const response = [
       {
+        name: "Cartoons",
+        total: 200,
+        completed: 0,
+        uncompleted: 200,
+      },
+      {
         name: "Bins",
         total: allBins.count,
         completed: emptedStatus.completed,
@@ -92,6 +98,7 @@ const kpi = async (req, res) => {
         completed: sweepersStatus.completed,
         uncompleted: 826 - sweepersStatus.completed,
       },
+      
     ];
 
     res.json(
