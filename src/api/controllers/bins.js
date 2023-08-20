@@ -334,4 +334,49 @@ const summary = async (req, res) => {
   }
 };
 
-export { bins, binById, binReports, binCategorized, summary };
+// Post Controllers
+
+const updateBin = async (req, res) => {
+  const body = req.body;
+
+  // Check if the target id is exist
+  try {
+    const query = `SELECT tc_geofences.id FROM tc_geofences WHERE tc_geofences.id='${body.id_bin}' AND tc_geofences.attributes LIKE '%"bins": "yes"%'`;
+    const targetExist = await db.query(query);
+
+    if (!targetExist?.length) {
+      throw new Error("You try to modify a none exist element");
+    }
+
+    if (body.position) {
+      // Rename position property
+      body.area = `CIRCLE(${body.position},7)`;
+      delete body.position;
+    }
+
+    let keyValue = "";
+
+    Object.keys(body).forEach((key, index, array) => {
+      // Skip the id_bin
+      if (key === "id_bin") return;
+
+      keyValue += `${key}='${body[key]}'`;
+
+      if (index === array.length - 1) return;
+
+      keyValue += ",";
+    });
+
+    const updateQuery = `UPDATE tc_geofences SET ${keyValue} WHERE tc_geofences.id='${body.id_bin}'`;
+
+    await db.query(updateQuery);
+
+    res.status(200).json({ data: "update success", update: true });
+  } catch (e) {
+    res.status(400).json({ error: "Error" });
+  }
+
+  res.status(200).end();
+};
+
+export { bins, binById, binReports, binCategorized, summary, updateBin };
