@@ -19,6 +19,6 @@ router.get("/summary", summary);
 router.get("/by/:category", binCategorized);
 router.get("/:id", binById);
 
-router.post("/", updateBin);
+router.patch("/", updateBin);
 
 export default router;

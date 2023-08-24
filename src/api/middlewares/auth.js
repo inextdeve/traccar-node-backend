@@ -1,5 +1,6 @@
 import tokenValidation from "../validations/tokenValidation.js";
 const auth = (req, res, next) => {
+  console.log(req.body);
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 

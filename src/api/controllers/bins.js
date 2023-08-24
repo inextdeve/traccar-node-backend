@@ -334,10 +334,15 @@ const summary = async (req, res) => {
   }
 };
 
-// Post Controllers
+// Patch Controllers
 
 const updateBin = async (req, res) => {
   const body = req.body;
+
+  console.log("body", req.body);
+  // if (!req.body.id_bin) {
+  //   throw new Error("Invalid id or empty");
+  // }
 
   // Check if the target id is exist
   try {
@@ -373,6 +378,7 @@ const updateBin = async (req, res) => {
 
     res.status(200).json({ data: "update success", update: true });
   } catch (e) {
+    console.log(e);
     res.status(400).json({ error: "Error" });
   }
 
