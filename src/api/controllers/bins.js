@@ -376,13 +376,37 @@ const updateBin = async (req, res) => {
 
     await db.query(updateQuery);
 
-    res.status(200).json({ data: "update success", update: true });
+    res.status(204).json({ data: "update success", update: true });
   } catch (e) {
     console.log(e);
-    res.status(400).json({ error: "Error" });
+    res.status(304).json({ error: "Error" });
   }
 
-  res.status(200).end();
+  res.status(204).end();
 };
 
-export { bins, binById, binReports, binCategorized, summary, updateBin };
+// Put Controller
+
+const addBin = async (req, res) => {
+
+  const body = req.body;
+
+  // Optimize properties for DB
+
+  // Create query
+
+  try {
+    const addQuery = `INSERT INTO tc_geofences (${Object.keys(body).join(", ")}) VALUES (${Object.values(body).join(", ")});`
+
+    const addRow = await db.query(addQuery);
+
+    res.status(200).json({sccuess: "true", message: "Entries added successfully", id: addRow[0].id});
+
+  } catch (e) {
+    res.status(400).end();
+  }
+
+  res.status(200).json({success: true})
+}
+
+export { bins, binById, binReports, binCategorized, summary, updateBin, addBin };
