@@ -21,7 +21,7 @@ const bins = async (req, res) => {
   }" AND ${query.to ? `"${query.to}"` : false || "(SELECT current_timestamp)"}`;
 
   //Query for all bins
-  const queryAllBins = `SELECT tc_geofences.id AS id_bin, tc_geofences.description, tc_geofences.area AS position, tcn_centers.center_name, tcn_routs.rout_code AS route, tcn_bin_type.bintype
+  const queryAllBins = `SELECT tc_geofences.id AS id_bin, tc_geofences.description, tc_geofences.area AS position, tc_geofences.routid, tc_geofences.centerid,tc_geofences.bintypeid , tcn_centers.center_name, tcn_routs.rout_code AS route, tcn_bin_type.bintype
                         FROM tc_geofences
                         JOIN tcn_centers ON tc_geofences.centerid=tcn_centers.id
                         JOIN tcn_routs ON tc_geofences.routid=tcn_routs.id
@@ -388,7 +388,6 @@ const updateBin = async (req, res) => {
 // Put Controller
 
 const addBin = async (req, res) => {
-
   const body = req.body;
 
   // Optimize properties for DB
@@ -396,17 +395,32 @@ const addBin = async (req, res) => {
   // Create query
 
   try {
-    const addQuery = `INSERT INTO tc_geofences (${Object.keys(body).join(", ")}) VALUES (${Object.values(body).join(", ")});`
+    const addQuery = `INSERT INTO tc_geofences (${Object.keys(body).join(
+      ", "
+    )}) VALUES (${Object.values(body).join(", ")});`;
 
     const addRow = await db.query(addQuery);
 
-    res.status(200).json({sccuess: "true", message: "Entries added successfully", id: addRow[0].id});
-
+    res
+      .status(200)
+      .json({
+        sccuess: "true",
+        message: "Entries added successfully",
+        id: addRow[0].id,
+      });
   } catch (e) {
     res.status(400).end();
   }
 
-  res.status(200).json({success: true})
-}
+  res.status(200).json({ success: true });
+};
 
-export { bins, binById, binReports, binCategorized, summary, updateBin, addBin };
+export {
+  bins,
+  binById,
+  binReports,
+  binCategorized,
+  summary,
+  updateBin,
+  addBin,
+};
