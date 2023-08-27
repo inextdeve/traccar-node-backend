@@ -329,7 +329,6 @@ const summary = async (req, res) => {
     }
     res.json(response);
   } catch (error) {
-    console.log(error);
     res.status(500).end();
   }
 };
@@ -338,11 +337,6 @@ const summary = async (req, res) => {
 
 const updateBin = async (req, res) => {
   const body = req.body;
-
-  console.log("body", req.body);
-  // if (!req.body.id_bin) {
-  //   throw new Error("Invalid id or empty");
-  // }
 
   // Check if the target id is exist
   try {
@@ -378,7 +372,6 @@ const updateBin = async (req, res) => {
 
     res.status(204).json({ data: "update success", update: true });
   } catch (e) {
-    console.log(e);
     res.status(304).json({ error: "Error" });
   }
 
@@ -401,13 +394,11 @@ const addBin = async (req, res) => {
 
     const addRow = await db.query(addQuery);
 
-    res
-      .status(200)
-      .json({
-        sccuess: "true",
-        message: "Entries added successfully",
-        id: addRow[0].id,
-      });
+    res.status(200).json({
+      sccuess: "true",
+      message: "Entries added successfully",
+      id: addRow[0].id,
+    });
   } catch (e) {
     res.status(400).end();
   }
