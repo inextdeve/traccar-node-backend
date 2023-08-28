@@ -424,11 +424,34 @@ const addBin = async (req, res) => {
     console.log("ROW", addRow);
 
     res.status(200).json({
-      sccuess: "true",
+      sccuess: true,
       message: "Entries added successfully",
     });
   } catch (e) {
     console.log(e);
+    res.status(400).end();
+  }
+};
+
+const deleteBin = async (req, res) => {
+  const body = req.body;
+
+  // body.selected contains ids of bins you want to delete
+
+  // Create query
+
+  try {
+    const addQuery = `DELETE FROM tc_geofences WHERE tc_geofences.id IN (${Object.values(body.selected).join(", ")});`;
+
+    const deleteRows = await db.query(addQuery);
+
+    res
+      .status(200)
+      .json({
+        sccuess: true,
+        message: "Entries deleted successfully",
+      });
+  } catch (e) {
     res.status(400).end();
   }
 };
@@ -441,4 +464,5 @@ export {
   summary,
   updateBin,
   addBin,
+  deleteBin
 };
