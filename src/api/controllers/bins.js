@@ -382,28 +382,55 @@ const updateBin = async (req, res) => {
 
 const addBin = async (req, res) => {
   const body = req.body;
+  delete body.id_bin;
 
   // Optimize properties for DB
+  if (body.position) {
+    // Rename position property
+    body.area = `CIRCLE(${body.position},7)`;
+    delete body.position;
+  }
+  // Add attributes value
 
-  // Create query
+  body.attributes = {
+    color: "#3f51b5",
+    bins: "yes",
+    ...body,
+  };
+
+  const flatValues = Object.values(body)
+    .map((value) => {
+      if (typeof value === "string") {
+        return "'" + value + "'";
+      }
+      if (typeof value === "object") {
+        return "'" + JSON.stringify(value, null, 1) + "'";
+      }
+      return value;
+    })
+    .join(", ");
+
+  //{"color": "#3f51b5", "bins": "yes", "centerid": "10", "bintypeid": "3 ", "routid": "28"}
 
   try {
     const addQuery = `INSERT INTO tc_geofences (${Object.keys(body).join(
       ", "
-    )}) VALUES (${Object.values(body).join(", ")});`;
+    )}) VALUES (${flatValues});`;
+
+    console.log("Query", addQuery);
 
     const addRow = await db.query(addQuery);
+
+    console.log("ROW", addRow);
 
     res.status(200).json({
       sccuess: "true",
       message: "Entries added successfully",
-      id: addRow[0].id,
     });
   } catch (e) {
+    console.log(e);
     res.status(400).end();
   }
-
-  res.status(200).json({ success: true });
 };
 
 export {
