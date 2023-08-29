@@ -436,6 +436,7 @@ const deleteBin = async (req, res) => {
   // Create query
 
   try {
+    throw new Error("This operation is currently blocked for security reasons")
     const addQuery = `DELETE FROM tc_geofences WHERE tc_geofences.id IN (${Object.values(
       body.selected
     ).join(", ")});`;
@@ -446,8 +447,8 @@ const deleteBin = async (req, res) => {
       sccuess: true,
       message: "Entries deleted successfully",
     });
-  } catch (e) {
-    res.status(400).end();
+  } catch (error) {
+    res.status(400).json({success: false, messgae: error.message});
   }
 };
 
