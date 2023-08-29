@@ -7,6 +7,10 @@ import memoryCache from "memory-cache";
 
 const cache = (duration, responseMethod) => {
   return (req, res, next) => {
+    if (req.method !== "GET") {
+      next();
+      return;
+    }
     const key = "__express__" + req.originalUrl || req.url;
     const cachedResponse = memoryCache.get(key);
 

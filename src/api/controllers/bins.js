@@ -410,26 +410,21 @@ const addBin = async (req, res) => {
     })
     .join(", ");
 
-  //{"color": "#3f51b5", "bins": "yes", "centerid": "10", "bintypeid": "3 ", "routid": "28"}
+  console.log(flatValues);
 
   try {
     const addQuery = `INSERT INTO tc_geofences (${Object.keys(body).join(
       ", "
     )}) VALUES (${flatValues});`;
 
-    console.log("Query", addQuery);
-
     const addRow = await db.query(addQuery);
-
-    console.log("ROW", addRow);
 
     res.status(200).json({
       sccuess: true,
       message: "Entries added successfully",
     });
   } catch (e) {
-    console.log(e);
-    res.status(400).end();
+    res.status(400).json({ success: false });
   }
 };
 
@@ -441,16 +436,16 @@ const deleteBin = async (req, res) => {
   // Create query
 
   try {
-    const addQuery = `DELETE FROM tc_geofences WHERE tc_geofences.id IN (${Object.values(body.selected).join(", ")});`;
+    const addQuery = `DELETE FROM tc_geofences WHERE tc_geofences.id IN (${Object.values(
+      body.selected
+    ).join(", ")});`;
 
     const deleteRows = await db.query(addQuery);
 
-    res
-      .status(200)
-      .json({
-        sccuess: true,
-        message: "Entries deleted successfully",
-      });
+    res.status(200).json({
+      sccuess: true,
+      message: "Entries deleted successfully",
+    });
   } catch (e) {
     res.status(400).end();
   }
@@ -464,5 +459,5 @@ export {
   summary,
   updateBin,
   addBin,
-  deleteBin
+  deleteBin,
 };
