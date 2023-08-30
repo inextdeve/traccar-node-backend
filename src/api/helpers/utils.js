@@ -16,3 +16,22 @@ export const getDatesInRange = (startDate, endDate) => {
  */
 
 export const countRate = (total, n) => (n * 100) / total;
+
+/**
+ * @param {Array} arr Array of values
+ */
+
+// Flat array values for fit the sql syntax
+
+export const flatArray = (arr) =>
+  arr
+    .map((value) => {
+      if (typeof value === "string") {
+        return "'" + value + "'";
+      }
+      if (typeof value === "object") {
+        return "'" + JSON.stringify(value, null, 1) + "'";
+      }
+      return value;
+    })
+    .join(", ");

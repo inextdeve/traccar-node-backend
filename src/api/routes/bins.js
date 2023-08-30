@@ -7,7 +7,7 @@ import {
   summary,
   updateBin,
   addBin,
-  deleteBin
+  deleteBin,
 } from "../controllers/bins.js";
 import cache from "../middlewares/cache.js";
 
@@ -21,10 +21,8 @@ router.get("/summary", summary);
 router.get("/by/:category", binCategorized);
 router.get("/:id", binById);
 
-router.patch("/", updateBin);
-
 router.put("/", addBin);
-
-router.delete("/", deleteBin)
+router.patch("/", updateBin);
+router.delete("/", deleteBin);
 
 export default router;

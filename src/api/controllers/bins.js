@@ -370,12 +370,14 @@ const updateBin = async (req, res) => {
 
     await db.query(updateQuery);
 
-    res.status(204).json({ data: "update success", update: true });
+    res
+      .status(204)
+      .json({ success: true, message: "Item updated successfully" });
   } catch (e) {
-    res.status(304).json({ error: "Error" });
+    res
+      .status(400)
+      .json({ success: false, message: "Item cannot updated server error" });
   }
-
-  res.status(204).end();
 };
 
 // Put Controller
@@ -410,8 +412,6 @@ const addBin = async (req, res) => {
     })
     .join(", ");
 
-  console.log(flatValues);
-
   try {
     const addQuery = `INSERT INTO tc_geofences (${Object.keys(body).join(
       ", "
@@ -436,7 +436,7 @@ const deleteBin = async (req, res) => {
   // Create query
 
   try {
-    throw new Error("This operation is currently blocked for security reasons")
+    throw new Error("This operation is currently blocked for security reasons");
     const addQuery = `DELETE FROM tc_geofences WHERE tc_geofences.id IN (${Object.values(
       body.selected
     ).join(", ")});`;
@@ -448,7 +448,7 @@ const deleteBin = async (req, res) => {
       message: "Entries deleted successfully",
     });
   } catch (error) {
-    res.status(400).json({success: false, messgae: error.message});
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 
