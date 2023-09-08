@@ -1,6 +1,32 @@
 import { db } from "../db/config/index.js";
 import { LAST7DAYS, LASTWEEK } from "../helpers/constants.js";
 
+const binsv2 = async (req, res) => {
+  const query = req.query;
+  console.log(query);
+
+  const dbQueryAll = `SELECT tt.geoid AS id, tt.serv_time FROM tcn_poi_schedule tt
+  INNER JOIN (SELECT geoid, MAX(serv_time) AS MaxDateTime FROM tcn_poi_schedule GROUP BY geoid)
+  groupedtt ON tt.geoid=groupedtt.geoid
+  AND tt.serv_time = groupedtt.MaxDateTime`;
+
+  try {
+    const allBins = await db.query(dbQueryAll);
+
+    const data = allBins.map((item) => ({
+      id: item.id,
+      time: item.serv_time.toISOString().split(".")[0],
+    }));
+
+    res.json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
 const bins = async (req, res) => {
   const query = req.query;
 
@@ -34,6 +60,7 @@ const bins = async (req, res) => {
 
   try {
     const allBins = await db.query(queryAllBins);
+    console.log(allBins.length);
 
     const data = await db.query(dbQuery);
 
@@ -454,6 +481,7 @@ const deleteBin = async (req, res) => {
 
 export {
   bins,
+  binsv2,
   binById,
   binReports,
   binCategorized,
