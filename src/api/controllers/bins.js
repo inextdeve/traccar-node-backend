@@ -4,11 +4,6 @@ import { LAST7DAYS, LASTWEEK } from "../helpers/constants.js";
 const binsv2 = async (req, res) => {
   // const query = req.query;
 
-  const dbQueryAll = `SELECT tt.geoid AS id, tt.serv_time FROM tcn_poi_schedule tt
-  INNER JOIN (SELECT geoid, MAX(serv_time) AS MaxDateTime FROM tcn_poi_schedule GROUP BY geoid)
-  groupedtt ON tt.geoid=groupedtt.geoid
-  AND tt.serv_time = groupedtt.MaxDateTime`;
-
   try {
     const allBins = await db.query(dbQueryAll);
 
@@ -57,11 +52,23 @@ const bins = async (req, res) => {
     binTypeCondition ? `AND ${binTypeCondition}` : ""
   }`;
 
+  const queryLastOperations = `SELECT tt.geoid AS id, tt.serv_time FROM tcn_poi_schedule tt
+  INNER JOIN (SELECT geoid, MAX(serv_time) AS MaxDateTime FROM tcn_poi_schedule GROUP BY geoid)
+  groupedtt ON tt.geoid=groupedtt.geoid
+  AND tt.serv_time = groupedtt.MaxDateTime`;
+
   try {
     const allBins = await db.query(queryAllBins);
-    console.log(allBins.length);
 
     const data = await db.query(dbQuery);
+
+    const lastOperations = await db.query(queryLastOperations);
+
+    const lastOpearionsObject = new Object();
+
+    lastOperations.forEach((element) => {
+      lastOpearionsObject[element.id] = element.serv_time;
+    });
 
     const dataObject = new Object();
 
@@ -72,37 +79,34 @@ const bins = async (req, res) => {
     let response = new Array();
 
     response = allBins.map((bin) => {
-      if (dataObject[bin.id_bin]) {
-        return {
-          ...bin,
-          latitude: bin.position.split(" ")[0].split("(")[1],
-          longitude: bin.position.split(" ")[1].split(",")[0],
-          status: "empty",
-          empted: true,
-        };
-      } else {
-        return {
-          ...bin,
-          latitude: bin.position.split(" ")[0].split("(")[1],
-          longitude: bin.position.split(" ")[1].split(",")[0],
-          status: "unempty",
-          empted: false,
-        };
-      }
+      const newBin = {
+        ...bin,
+        latitude: bin.position.split(" ")[0].split("(")[1],
+        longitude: bin.position.split(" ")[1].split(",")[0],
+        status: dataObject[bin.id_bin] ? "empty" : "unempty",
+        empted: !!dataObject[bin.id_bin],
+        time: lastOpearionsObject[bin.id_bin]
+          ? lastOpearionsObject[bin.id_bin]?.toISOString().split("T")[0]
+          : null,
+      };
+
+      delete newBin.position;
+      return newBin;
     });
 
-    res.json(
-      response.filter((item) => {
+    if (binStatusCondition !== "all") {
+      response = response.filter((item) => {
         if (binStatusCondition === "empted") {
           return item.empted === true;
-        } else if (binStatusCondition === "unempted") {
-          return item.empted === false;
-        } else {
-          return true;
         }
-      })
-    );
-  } catch (e) {}
+        return item.empted === false;
+      });
+    }
+
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
 };
 
 const binById = async (req, res) => {
