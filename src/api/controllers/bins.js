@@ -2,8 +2,7 @@ import { db } from "../db/config/index.js";
 import { LAST7DAYS, LASTWEEK } from "../helpers/constants.js";
 
 const binsv2 = async (req, res) => {
-  const query = req.query;
-  console.log(query);
+  // const query = req.query;
 
   const dbQueryAll = `SELECT tt.geoid AS id, tt.serv_time FROM tcn_poi_schedule tt
   INNER JOIN (SELECT geoid, MAX(serv_time) AS MaxDateTime FROM tcn_poi_schedule GROUP BY geoid)
@@ -15,7 +14,7 @@ const binsv2 = async (req, res) => {
 
     const data = allBins.map((item) => ({
       id: item.id,
-      time: item.serv_time.toISOString().split(".")[0],
+      time: item.serv_time.toISOString().split("T")[0],
     }));
 
     res.json({
