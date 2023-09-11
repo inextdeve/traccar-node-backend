@@ -76,9 +76,7 @@ const bins = async (req, res) => {
       dataObject[element.geoid] = element;
     });
 
-    let response = new Array();
-
-    response = allBins.map((bin) => {
+    let response = allBins.map((bin) => {
       const newBin = {
         ...bin,
         latitude: bin.position.split(" ")[0].split("(")[1],
