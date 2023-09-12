@@ -74,10 +74,15 @@ export const deleteCenter = async (req, res) => {
 
   // Create query
 
-  const targetIds = Object.values(body.selected).join(", ");
-
   try {
+    if (body.selected.length > 10) {
+      throw new Error(
+        "You cannot delete more than 10 items for security reasons"
+      );
+    }
+
     // throw new Error("This operation is currently blocked for security reasons");
+    const targetIds = Object.values(body.selected).join(", ");
 
     const query = `DELETE FROM tcn_centers WHERE tcn_centers.id IN (${targetIds});`;
 

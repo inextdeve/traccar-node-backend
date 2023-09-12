@@ -461,15 +461,17 @@ const deleteBin = async (req, res) => {
 
   // body.selected contains ids of bins you want to delete
 
-  // Create query
-
   try {
-    throw new Error("This operation is currently blocked for security reasons");
+    if (body.selected.length > 10) {
+      throw new Error(
+        "You cannot delete more than 10 items for security reasons"
+      );
+    }
     const addQuery = `DELETE FROM tc_geofences WHERE tc_geofences.id IN (${Object.values(
       body.selected
     ).join(", ")});`;
 
-    const deleteRows = await db.query(addQuery);
+    await db.query(addQuery);
 
     res.status(200).json({
       sccuess: true,

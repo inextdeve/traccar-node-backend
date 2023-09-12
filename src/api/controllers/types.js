@@ -73,10 +73,13 @@ export const deleteType = async (req, res) => {
 
   // Create query
 
-  const targetIds = Object.values(body.selected).join(", ");
-
   try {
-    throw new Error("This operation is currently blocked for security reasons");
+    if (body.selected.length > 10) {
+      throw new Error(
+        "You cannot delete more than 10 items for security reasons"
+      );
+    }
+    const targetIds = Object.values(body.selected).join(", ");
 
     const query = `DELETE FROM tcn_bin_type WHERE tcn_bin_type.id IN (${targetIds});`;
 

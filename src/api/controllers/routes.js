@@ -72,10 +72,14 @@ export const deleteRoute = async (req, res) => {
 
   // Create query
 
-  const targetIds = Object.values(body.selected).join(", ");
-
   try {
-    throw new Error("This operation is currently blocked for security reasons");
+    if (body.selected.length > 10) {
+      throw new Error(
+        "You cannot delete more than 10 items for security reasons"
+      );
+    }
+
+    const targetIds = Object.values(body.selected).join(", ");
 
     const query = `DELETE FROM tcn_routs WHERE tcn_routs.id IN (${targetIds});`;
 
