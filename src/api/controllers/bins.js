@@ -1,26 +1,6 @@
 import { db } from "../db/config/index.js";
 import { LAST7DAYS, LASTWEEK } from "../helpers/constants.js";
 
-const binsv2 = async (req, res) => {
-  // const query = req.query;
-
-  try {
-    const allBins = await db.query(dbQueryAll);
-
-    const data = allBins.map((item) => ({
-      id: item.id,
-      time: item.serv_time.toISOString().split("T")[0],
-    }));
-
-    res.json({
-      success: true,
-      data,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Internal Server Error" });
-  }
-};
-
 const bins = async (req, res) => {
   const query = req.query;
 
@@ -63,6 +43,12 @@ const bins = async (req, res) => {
     const data = await db.query(dbQuery);
 
     const lastOperations = await db.query(queryLastOperations);
+
+    // const [allBins, data, lastOperations] = await Promise.all([
+    //   db.query(queryAllBins),
+    //   db.query(dbQuery),
+    //   db.query(queryLastOperations),
+    // ]);
 
     const lastOpearionsObject = new Object();
 
@@ -484,7 +470,6 @@ const deleteBin = async (req, res) => {
 
 export {
   bins,
-  binsv2,
   binById,
   binReports,
   binCategorized,

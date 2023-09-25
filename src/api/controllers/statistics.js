@@ -41,6 +41,12 @@ const kpi = async (req, res) => {
   //Count All Sweepers
   const countSweepers = `SELECT  COUNT(id) AS count from  tc_devices WHERE tc_devices.groupid='5' or tc_devices.name like '%14'`;
 
+  // Cartoons Query
+  const completedCartoonsQuery = `SELECT COUNT(*) AS completed FROM tcn_poi_schedule AS schedule JOIN tc_geofences AS geofence ON schedule.geoid = geofence.id WHERE JSON_CONTAINS (geofence.attributes, '{"cartoon": "yes"}', '$') AND DATE(schedule.serv_time) = '${
+    query.from.split("T")[0]
+  }'`;
+  // All Cartoons query
+  const countCartoons = `SELECT COUNT(*) AS count FROM tc_geofences where JSON_CONTAINS(tc_geofences.attributes, '{"cartoon": "yes"}', '$')`;
   try {
     const [
       emptedStatus,
@@ -50,6 +56,8 @@ const kpi = async (req, res) => {
       allBins,
       allVehicle,
       allSweepers,
+      completedCartoons,
+      allCartoons,
     ] = (
       await Promise.all([
         db.query(emptedBins),
@@ -59,6 +67,8 @@ const kpi = async (req, res) => {
         db.query(countBins),
         db.query(countVehicle),
         db.query(countSweepers),
+        db.query(completedCartoonsQuery),
+        db.query(countCartoons),
       ])
     ).map((ele) => {
       if (ele[0].hasOwnProperty("completed")) {
@@ -70,9 +80,9 @@ const kpi = async (req, res) => {
     const response = [
       {
         name: "Cartoons",
-        total: 200,
-        completed: 0,
-        uncompleted: 200,
+        total: allCartoons.count,
+        completed: completedCartoons.completed,
+        uncompleted: allCartoons.count - completedCartoons.completed,
       },
       {
         name: "Bins",
@@ -98,7 +108,6 @@ const kpi = async (req, res) => {
         completed: sweepersStatus.completed,
         uncompleted: 826 - sweepersStatus.completed,
       },
-      
     ];
 
     res.json(
@@ -108,7 +117,7 @@ const kpi = async (req, res) => {
       }))
     );
   } catch (error) {
-    res.status(500).end();
+    res.sendStatus(500);
   }
 };
 

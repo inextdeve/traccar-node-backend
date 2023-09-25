@@ -6,6 +6,7 @@ import statisticsRouter from "./statistics.js";
 import routesRouter from "./routes.js";
 import centersRouter from "./centers.js";
 import typesRouter from "./types.js";
+import simulatorRouter from "./simulator.js";
 
 import auth from "../middlewares/auth.js";
 import moment from "moment";
@@ -25,5 +26,6 @@ router.use("/statistics", statisticsRouter);
 router.use("/routes", routesRouter);
 router.use("/centers", centersRouter);
 router.use("/types", typesRouter);
+router.use("/simulator", simulatorRouter);
 
 export default router;
