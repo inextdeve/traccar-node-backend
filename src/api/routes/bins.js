@@ -8,6 +8,7 @@ import {
   updateBin,
   addBin,
   deleteBin,
+  updateBinStatus,
 } from "../controllers/bins.js";
 import cache from "../middlewares/cache.js";
 
@@ -23,6 +24,7 @@ router.get("/:id", binById);
 
 router.put("/", addBin);
 router.patch("/", updateBin);
+router.patch("/status", updateBinStatus);
 router.delete("/", deleteBin);
 
 export default router;

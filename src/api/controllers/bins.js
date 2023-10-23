@@ -468,6 +468,24 @@ const deleteBin = async (req, res) => {
   }
 };
 
+// Set a bin status [empted]
+
+const updateBinStatus = async (req, res) => {
+
+  const {id} = req.body;
+
+  if (!id) res.sendStatus(404); 
+
+  const query = `INSERT INTO tcn_poi_schedule (geoid) VALUES (${id})`;
+
+  try {
+    await db.query(query);
+    res.sendStatus(202);
+  } catch (error) {
+    res.sendStatus(500);
+  }
+}
+
 export {
   bins,
   binById,
@@ -477,4 +495,5 @@ export {
   updateBin,
   addBin,
   deleteBin,
+  updateBinStatus
 };
