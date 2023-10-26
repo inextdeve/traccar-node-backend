@@ -477,8 +477,6 @@ const updateBinStatus = async (req, res) => {
 
   const targetBinQuery = `SELECT * FROM tc_geofences WHERE description="${description}" LIMIT 1`;
 
-  const isEmptedQuery = `SELECT id from tcn_poi_schedule WHERE serv_time BETWEEN "${req.query.from}" AND (select current_timestamp) AND geoid="${targetBin[0].id}"`;
-
   try {
     // Check if the target bin is exist
     const targetBin = await db.query(targetBinQuery);
@@ -486,6 +484,7 @@ const updateBinStatus = async (req, res) => {
       return res.status(404).send("Bin not found !");
 
     // Check if the target is already empted
+    const isEmptedQuery = `SELECT id from tcn_poi_schedule WHERE serv_time BETWEEN "${req.query.from}" AND (select current_timestamp) AND geoid="${targetBin[0].id}"`;
     const isEmpted = await db.query(isEmptedQuery);
 
     if (!isEmpted && !isEmpted?.length)
