@@ -471,20 +471,38 @@ const deleteBin = async (req, res) => {
 // Set a bin status [empted]
 
 const updateBinStatus = async (req, res) => {
+  const { description } = req.body;
 
-  const {id} = req.body;
+  if (!description) res.sendStatus(404);
 
-  if (!id) res.sendStatus(404); 
+  const targetBinQuery = `SELECT * FROM tc_geofences WHERE description="${description}" LIMIT 1`;
 
-  const query = `INSERT INTO tcn_poi_schedule (geoid) VALUES (${id})`;
+  const isEmptedQuery = `SELECT id from tcn_poi_schedule WHERE serv_time BETWEEN "${req.query.from}" AND (select current_timestamp) AND geoid="${targetBin[0].id}"`;
 
   try {
-    await db.query(query);
+    // Check if the target bin is exist
+    const targetBin = await db.query(targetBinQuery);
+    if (!targetBin && !targetBin?.length)
+      return res.status(404).send("Bin not found !");
+
+    // Check if the target is already empted
+    const isEmpted = await db.query(isEmptedQuery);
+
+    if (!isEmpted && !isEmpted?.length)
+      return res.status(409).end("Conflict already empted bin");
+
+    // Add bin to empted query
+
+    const addBinToEmptedQuery = `INSERT INTO tcn_poi_schedule (serv_time, geoid) VALUES (current_timestamp, ${targetBin[0].id})`;
+
+    await db.query(addBinToEmptedQuery);
+
     res.sendStatus(202);
   } catch (error) {
+    console.log(error);
     res.sendStatus(500);
   }
-}
+};
 
 export {
   bins,
@@ -495,5 +513,5 @@ export {
   updateBin,
   addBin,
   deleteBin,
-  updateBinStatus
+  updateBinStatus,
 };
