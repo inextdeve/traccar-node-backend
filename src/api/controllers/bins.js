@@ -480,17 +480,19 @@ const updateBinStatus = async (req, res) => {
   try {
     // Check if the target bin is exist
     const targetBin = await db.query(targetBinQuery);
-    if (!targetBin && !targetBin?.length)
-      return res.status(404).send("Bin not found !");
+    if (!targetBin || !targetBin?.length)
+      return res.status(404).end("Bin not found !");
 
     // Check if the target is already empted
+
     const isEmptedQuery = `SELECT id from tcn_poi_schedule WHERE serv_time BETWEEN "${req.query.from}" AND (select current_timestamp) AND geoid="${targetBin[0].id}"`;
+
     const isEmpted = await db.query(isEmptedQuery);
 
-    if (!isEmpted && !isEmpted?.length)
+    if (isEmpted?.length)
       return res.status(409).end("Conflict already empted bin");
 
-    // Add bin to empted query
+    // Add bin to empted, query
 
     const addBinToEmptedQuery = `INSERT INTO tcn_poi_schedule (serv_time, geoid) VALUES (current_timestamp, ${targetBin[0].id})`;
 
@@ -498,7 +500,6 @@ const updateBinStatus = async (req, res) => {
 
     res.sendStatus(202);
   } catch (error) {
-    console.log(error);
     res.sendStatus(500);
   }
 };
