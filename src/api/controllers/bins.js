@@ -1,3 +1,4 @@
+import moment from "moment";
 import { db } from "../db/config/index.js";
 import { LAST7DAYS, LASTWEEK } from "../helpers/constants.js";
 
@@ -501,13 +502,16 @@ const updateBinStatus = async (req, res) => {
 
     // Add bin to empted, query
 
-    const addBinToEmptedQuery = `INSERT INTO tcn_poi_schedule (serv_time, geoid) VALUES (current_timestamp, ${targetBin[0].id})`;
+    const addBinToEmptedQuery = `INSERT INTO tcn_poi_schedule (serv_time, geoid, codeserv) VALUES (current_timestamp, ${
+      targetBin[0].id
+    }, ${moment().format("YYYYDDMM") + targetBin[0].id})`;
 
     await db.query(addBinToEmptedQuery);
 
     res.sendStatus(202);
   } catch (error) {
-    res.sendStatus(500);
+    console.log(error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
 
