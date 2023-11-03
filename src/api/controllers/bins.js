@@ -481,7 +481,9 @@ const updateBinStatus = async (req, res) => {
     // Check if the target bin is exist
     const targetBin = await db.query(targetBinQuery);
     if (!targetBin || !targetBin?.length)
-      return res.status(404).end("Bin not found !");
+      return res
+        .status(404)
+        .json({ success: false, message: "Bin not found !" });
 
     // Check if the target is already empted
 
@@ -490,7 +492,9 @@ const updateBinStatus = async (req, res) => {
     const isEmpted = await db.query(isEmptedQuery);
 
     if (isEmpted?.length)
-      return res.status(409).end("Conflict already empted bin");
+      return res
+        .status(409)
+        .json({ success: false, message: "Conflict! already empted bin" });
 
     // Add bin to empted, query
 
