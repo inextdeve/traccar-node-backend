@@ -473,7 +473,10 @@ const deleteBin = async (req, res) => {
 const updateBinStatus = async (req, res) => {
   const { description } = req.body;
 
-  if (!description) return res.sendStatus(404);
+  if (!description)
+    return res
+      .status(404)
+      .json({ success: false, message: "request without description" });
 
   const targetBinQuery = `SELECT * FROM tc_geofences WHERE description="${description}" LIMIT 1`;
 
