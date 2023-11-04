@@ -479,7 +479,9 @@ const updateBinStatus = async (req, res) => {
       .status(404)
       .json({ success: false, message: "request without description" });
 
-  const targetBinQuery = `SELECT * FROM tc_geofences WHERE description="${description}" LIMIT 1`;
+  const targetBinQuery = `SELECT tc_geofences.id, tc_devices.name FROM tc_geofences WHERE description="${description}" LIMIT 1
+                          JOIN tcn_routs ON tc_geofences.routid = tcn_routs.id
+                          JOIN tc_devices ON tc_devices.id = tcn_routs.deviceid`;
 
   try {
     // Check if the target bin is exist
@@ -502,9 +504,9 @@ const updateBinStatus = async (req, res) => {
 
     // Add bin to empted, query
 
-    const addBinToEmptedQuery = `INSERT INTO tcn_poi_schedule (serv_time, geoid, codeserv) VALUES (current_timestamp, ${
+    const addBinToEmptedQuery = `INSERT INTO tcn_poi_schedule (serv_time, geoid, codeserv, VehicleID) VALUES (current_timestamp, ${
       targetBin[0].id
-    }, ${moment().format("YYYYDDMM") + targetBin[0].id})`;
+    }, ${moment().format("YYYYDDMM") + targetBin[0].id}, ${targetBin[0].name})`;
 
     await db.query(addBinToEmptedQuery);
 
