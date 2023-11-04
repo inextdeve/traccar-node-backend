@@ -479,9 +479,10 @@ const updateBinStatus = async (req, res) => {
       .status(404)
       .json({ success: false, message: "request without description" });
 
-  const targetBinQuery = `SELECT tc_geofences.id, tc_devices.name FROM tc_geofences WHERE description="${description}" LIMIT 1
+  const targetBinQuery = `SELECT tc_geofences.id, tc_devices.name FROM tc_geofences
                           JOIN tcn_routs ON tc_geofences.routid = tcn_routs.id
-                          JOIN tc_devices ON tc_devices.id = tcn_routs.deviceid`;
+                          JOIN tc_devices ON tc_devices.id = tcn_routs.deviceid
+                          WHERE tc_geofences.description="${description}" LIMIT 1`;
 
   try {
     // Check if the target bin is exist
@@ -506,13 +507,20 @@ const updateBinStatus = async (req, res) => {
 
     const addBinToEmptedQuery = `INSERT INTO tcn_poi_schedule (serv_time, geoid, codeserv, VehicleID) VALUES (current_timestamp, ${
       targetBin[0].id
-    }, ${moment().format("YYYYDDMM") + targetBin[0].id}, ${targetBin[0].name})`;
+    }, ${moment().format("YYYYDDMM") + targetBin[0].id}, "${
+      targetBin[0].name
+    }")`;
 
     await db.query(addBinToEmptedQuery);
 
     res.sendStatus(202);
   } catch (error) {
     console.log(error);
+    if (error?.code === "ER_DUP_ENTRY") {
+      return res
+        .status(409)
+        .json({ success: false, message: "Conflict! already empted bin" });
+    }
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
