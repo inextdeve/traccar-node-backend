@@ -507,7 +507,7 @@ const updateBinStatus = async (req, res) => {
 
     const addBinToEmptedQuery = `INSERT INTO tcn_poi_schedule (serv_time, geoid, codeserv, VehicleID) VALUES (current_timestamp, ${
       targetBin[0].id
-    }, ${moment().format("YYYYDDMM") + targetBin[0].id}, "${
+    }, ${moment().format("YYYYMMDD") + targetBin[0].id}, "${
       targetBin[0].name
     }")`;
 
@@ -515,7 +515,7 @@ const updateBinStatus = async (req, res) => {
 
     res.sendStatus(202);
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     if (error?.code === "ER_DUP_ENTRY") {
       return res
         .status(409)
