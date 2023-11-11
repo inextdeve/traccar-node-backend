@@ -29,6 +29,7 @@
     "mariadb": "^3.1.0",
     "memory-cache": "^0.2.0",
     "moment": "^2.29.4",
-    "sql-injection": "^0.0.7"
+    "sql-injection": "^0.0.7",
+    "zod": "^3.22.4"
   }
 }

@@ -1,5 +1,12 @@
 import { db } from "../db/config/index.js";
 import { TODAY } from "../helpers/constants.js";
+import { string, z } from "zod";
+
+const NearbyStopsBodySchema = z.object({
+  latitude: z.union([z.string(), z.number()]),
+  longitude: z.union([z.string(), z.number()]),
+  devices: string().array().nonempty(),
+});
 
 const summary = async (req, res) => {
   const query = req.query;
@@ -34,4 +41,28 @@ const summary = async (req, res) => {
     res.status(500).end;
   }
 };
-export { summary };
+
+const nearbyStops = async (req, res) => {
+  const { success } = NearbyStopsBodySchema.safeParse(req.body);
+
+  if (!success) return res.status(400).end("Entries not valid");
+
+  const { latitude, longitude, devices } = req.body;
+  const query = req.query;
+
+  const dbQuery = `SELECT * FROM tc_positions
+      WHERE latitude  BETWEEN ${latitude} - 0.001 AND ${latitude} + 0.001
+      AND longitude BETWEEN ${longitude} - 0.001 AND ${longitude} + 0.001
+      AND fixtime BETWEEN "${req.query.from}" AND ${
+    query.to ? `"${query.to}"` : false || "(select current_timestamp)"
+  } AND deviceid IN (${devices.join(",")})`;
+
+  try {
+    const data = await db.query(dbQuery);
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).end();
+  }
+};
+export { summary, nearbyStops };
