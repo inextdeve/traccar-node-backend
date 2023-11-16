@@ -6,6 +6,7 @@ const NearbyStopsBodySchema = z.object({
   latitude: z.union([z.string(), z.number()]),
   longitude: z.union([z.string(), z.number()]),
   devices: string(),
+  distance: z.union([z.string(), z.number()]),
   from: date(),
   to: date().optional(),
 });
@@ -45,7 +46,7 @@ const summary = async (req, res) => {
 };
 
 const nearbyStops = async (req, res) => {
-  console.log(req.query);
+  
   const { success } = NearbyStopsBodySchema.safeParse({
     ...req.query,
     from: new Date(req.query.from),
@@ -53,11 +54,13 @@ const nearbyStops = async (req, res) => {
 
   if (!success) return res.status(400).end("Entries not valid");
 
-  const { latitude, longitude, devices, to, from } = req.query;
+  const { latitude, longitude, devices,distance, to, from } = req.query;
+
+  const dist = distance / 100000;
 
   const dbQuery = `SELECT * FROM tc_positions
-      WHERE latitude  BETWEEN ${latitude} - 0.001 AND ${latitude} + 0.001
-      AND longitude BETWEEN ${longitude} - 0.001 AND ${longitude} + 0.001
+      WHERE latitude  BETWEEN ${latitude} - ${dist} AND ${latitude} + ${dist}
+      AND longitude BETWEEN ${longitude} - ${dist} AND ${longitude} + ${dist}
       AND fixtime BETWEEN "${from}" AND ${
     to ? `"${to}"` : false || "(select current_timestamp)"
   } AND deviceid IN (${devices})`;
