@@ -46,23 +46,23 @@ const summary = async (req, res) => {
 };
 
 const nearbyStops = async (req, res) => {
-  
-  const { success } = NearbyStopsBodySchema.safeParse({
+  const { success, error } = NearbyStopsBodySchema.safeParse({
     ...req.query,
     from: new Date(req.query.from),
+    to: new Date(req.query.to),
   });
 
   if (!success) return res.status(400).end("Entries not valid");
 
-  const { latitude, longitude, devices,distance, to, from } = req.query;
+  const { latitude, longitude, devices, distance, to, from } = req.query;
 
   const dist = distance / 100000;
 
   const dbQuery = `SELECT * FROM tc_positions
       WHERE latitude  BETWEEN ${latitude} - ${dist} AND ${latitude} + ${dist}
       AND longitude BETWEEN ${longitude} - ${dist} AND ${longitude} + ${dist}
-      AND fixtime BETWEEN "${from}" AND ${
-    to ? `"${to}"` : false || "(select current_timestamp)"
+      AND fixtime BETWEEN "${from} 00:00" AND ${
+    to ? `"${to} 23:59"` : false || "(select current_timestamp)"
   } AND deviceid IN (${devices})`;
 
   try {
