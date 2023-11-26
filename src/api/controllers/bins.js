@@ -91,8 +91,6 @@ const bins = async (req, res) => {
     res.json(response);
   } catch (error) {
     res.status(500).json({ success: false, message: "Internal Server Error" });
-  } finally {
-    db.end();
   }
 };
 
@@ -154,9 +152,6 @@ const binById = async (req, res) => {
     })),
     { last7Days: lastSevenDaysCheck.reverse() },
   ];
-
-  db.end();
-
   res.json(response);
 };
 
@@ -300,8 +295,6 @@ const binCategorized = async (req, res) => {
     }
   } catch (e) {
     res.status(500).end();
-  } finally {
-    db.end();
   }
 };
 
@@ -352,8 +345,6 @@ const summary = async (req, res) => {
     res.json(response);
   } catch (error) {
     res.status(500).end();
-  } finally {
-    db.end();
   }
 };
 
@@ -401,8 +392,6 @@ const updateBin = async (req, res) => {
     res
       .status(400)
       .json({ success: false, message: "Item cannot updated server error" });
-  } finally {
-    db.end();
   }
 };
 
@@ -451,8 +440,6 @@ const addBin = async (req, res) => {
     });
   } catch (e) {
     res.status(400).json({ success: false });
-  } finally {
-    db.end();
   }
 };
 
@@ -479,8 +466,6 @@ const deleteBin = async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
-  } finally {
-    db.end();
   }
 };
 
@@ -537,8 +522,6 @@ const updateBinStatus = async (req, res) => {
         .json({ success: false, message: "Conflict! already empted bin" });
     }
     res.status(500).json({ success: false, message: "Internal Server Error" });
-  } finally {
-    db.end();
   }
 };
 

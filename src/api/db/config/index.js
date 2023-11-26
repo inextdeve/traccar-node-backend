@@ -9,7 +9,6 @@ const db = mariadb.createPool({
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
   database: "rcj",
-  connectionLimit: 10,
 });
 
 db.getConnection();
