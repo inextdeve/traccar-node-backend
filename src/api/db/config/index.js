@@ -12,8 +12,6 @@ const db = mariadb.createPool({
   connectionLimit: 10,
 });
 
-db.getConnection().finally(() => {
-  db.end();
-});
+db.getConnection()
 
 export { db };
