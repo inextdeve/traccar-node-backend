@@ -1,7 +1,8 @@
-import { db } from "../db/config/index.js";
+import dbPools from "../db/config/index.js";
 import { countRate } from "../helpers/utils.js";
 
 const kpi = async (req, res) => {
+  let db;
   const { query } = req;
 
   //Empted bins today
@@ -48,6 +49,7 @@ const kpi = async (req, res) => {
   // All Cartoons query
   const countCartoons = `SELECT COUNT(*) AS count FROM tc_geofences where JSON_CONTAINS(tc_geofences.attributes, '{"cartoon": "yes"}', '$')`;
   try {
+    db = await dbPools.pool.getConnection();
     const [
       emptedStatus,
       washingStatus,
@@ -118,10 +120,16 @@ const kpi = async (req, res) => {
     );
   } catch (error) {
     res.sendStatus(500);
+  } finally {
+    if (db) {
+      await db.release();
+    }
   }
 };
 
 const summary = async (req, res) => {
+  let db;
+
   const dbQueryReports = `SELECT 
   COUNT(*) AS total_rows,
   SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) AS Open,
@@ -135,34 +143,48 @@ const summary = async (req, res) => {
   AND speed < 15
   AND fixtime >= DATE_SUB(NOW(), INTERVAL 7 DAY)`;
 
-  const [reports, sweepers] = await Promise.all([
-    db.query(dbQueryReports),
-    db.query(dbQuerySweepers),
-  ]);
+  try {
+    db = await dbPools.pool.getConnection();
+    const [reports, sweepers] = await Promise.all([
+      db.query(dbQueryReports),
+      db.query(dbQuerySweepers),
+    ]);
 
-  const response = [
-    {
-      name: "Reports",
-      total: 100,
-      done: parseInt(reports[0].Closed),
-      rate: parseInt(
-        countRate(parseInt(reports[0].total_rows), parseInt(reports[0].Closed))
-      ),
-      totalItems: parseInt(reports[0].Open) + parseInt(reports[0].Closed),
-    },
-    {
-      name: "Sweepers",
-      total: 100,
-      done: parseInt(sweepers[0].total_distance),
-      rate: parseInt(sweepers[0].rate_percentage),
-      totalItems: parseInt(sweepers[0].total_distance),
-    },
-  ];
+    const response = [
+      {
+        name: "Reports",
+        total: 100,
+        done: parseInt(reports[0].Closed),
+        rate: parseInt(
+          countRate(
+            parseInt(reports[0].total_rows),
+            parseInt(reports[0].Closed)
+          )
+        ),
+        totalItems: parseInt(reports[0].Open) + parseInt(reports[0].Closed),
+      },
+      {
+        name: "Sweepers",
+        total: 100,
+        done: parseInt(sweepers[0].total_distance),
+        rate: parseInt(sweepers[0].rate_percentage),
+        totalItems: parseInt(sweepers[0].total_distance),
+      },
+    ];
 
-  res.json(response);
+    res.json(response);
+  } catch (error) {
+    res.json({ status: 500, message: "Internal server error" });
+  } finally {
+    if (db) {
+      await db.release();
+    }
+  }
 };
 
 const vehicle = async (req, res) => {
+  let db;
+
   const query = req.query;
   const totalDistanceQuery = `SELECT SUM(JSON_EXTRACT(attributes, '$.distance'))/1000 AS totalDistance
   FROM tc_positions
@@ -208,30 +230,40 @@ const vehicle = async (req, res) => {
   }" and tc_events.type="geofenceExit"
 `;
 
-  const [
-    totalDistance,
-    totalHours,
-    totalVehicle,
-    onlineDevices,
-    exitedVehicles,
-  ] = await Promise.all([
-    db.query(totalDistanceQuery),
-    db.query(totalHoursQuery),
-    db.query(totalVehicleQuery),
-    onlineDevicesFetch,
-    db.query(exitedDevicesQuery),
-  ]);
+  try {
+    db = await dbPools.pool.getConnection();
+    const [
+      totalDistance,
+      totalHours,
+      totalVehicle,
+      onlineDevices,
+      exitedVehicles,
+    ] = await Promise.all([
+      db.query(totalDistanceQuery),
+      db.query(totalHoursQuery),
+      db.query(totalVehicleQuery),
+      onlineDevicesFetch,
+      db.query(exitedDevicesQuery),
+    ]);
 
-  const response = {
-    totalDistance: Math.round(parseInt(totalDistance[0].totalDistance)),
-    totalHours: Math.round(parseInt(totalHours[0].totalHours)),
-    totalVehicle: Math.round(parseInt(totalVehicle[0].totalVehicle)),
-    onlineDevices: onlineDevices.filter((device) => device.status === "online")
-      .length,
-    exitedVehicles: parseInt(exitedVehicles[0].completed),
-  };
+    const response = {
+      totalDistance: Math.round(parseInt(totalDistance[0].totalDistance)),
+      totalHours: Math.round(parseInt(totalHours[0].totalHours)),
+      totalVehicle: Math.round(parseInt(totalVehicle[0].totalVehicle)),
+      onlineDevices: onlineDevices.filter(
+        (device) => device.status === "online"
+      ).length,
+      exitedVehicles: parseInt(exitedVehicles[0].completed),
+    };
 
-  res.json(response);
+    res.json(response);
+  } catch (error) {
+    res.json({ status: 500, message: "Internal server error" });
+  } finally {
+    if (db) {
+      await db.release();
+    }
+  }
 };
 
 export { kpi, summary, vehicle };

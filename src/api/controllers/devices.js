@@ -1,4 +1,4 @@
-import { db } from "../db/config/index.js";
+import dbPools from "../db/config/index.js";
 import { TODAY } from "../helpers/constants.js";
 import { date, string, z } from "zod";
 
@@ -12,6 +12,7 @@ const NearbyStopsBodySchema = z.object({
 });
 
 const summary = async (req, res) => {
+  let db;
   const query = req.query;
 
   const dbQuery = `SELECT count(DISTINCT tc_events.deviceid) AS exited, eventtime AS eventTime from  tc_events
@@ -28,6 +29,7 @@ const summary = async (req, res) => {
   const totalQuery = "SELECT COUNT(id) AS total from tc_devices";
 
   try {
+    db = await dbPools.pool.getConnection();
     const [total, data] = await Promise.all([
       db.query(totalQuery),
       db.query(dbQuery),
@@ -42,10 +44,15 @@ const summary = async (req, res) => {
     res.json(response);
   } catch (error) {
     res.status(500).end;
+  } finally {
+    if (db) {
+      await db.release();
+    }
   }
 };
 
 const nearbyStops = async (req, res) => {
+  let db;
   const { success, error } = NearbyStopsBodySchema.safeParse({
     ...req.query,
     from: new Date(req.query.from),
@@ -66,11 +73,16 @@ const nearbyStops = async (req, res) => {
   } AND deviceid IN (${devices})`;
 
   try {
+    db = await dbPools.pool.getConnection();
     const data = await db.query(dbQuery);
 
     res.json(data);
   } catch (error) {
     res.status(500).end();
+  } finally {
+    if (db) {
+      await db.release();
+    }
   }
 };
 export { summary, nearbyStops };

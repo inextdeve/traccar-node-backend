@@ -1,11 +1,12 @@
 import memoryCache from "memory-cache";
-import { db } from "../db/config/index.js";
+import dbPools from "../db/config/index.js";
 /**
  * @param {String} token //Token
  * @param {Function} fn //Callback Function
  */
 
 const tokenValidation = async (token, fn) => {
+  let db;
   const tokenCache = memoryCache.get(`__TOKEN__${token}`);
   if (tokenCache) {
     return fn(true, null);
@@ -13,6 +14,7 @@ const tokenValidation = async (token, fn) => {
     const dbQuery = `SELECT id FROM tc_users WHERE attributes LIKE '%"apitoken":"${token}"%'`;
 
     try {
+      db = await dbPools.pool.getConnection();
       const checkExist = await db.query(dbQuery);
 
       if (checkExist.length) {
@@ -23,6 +25,10 @@ const tokenValidation = async (token, fn) => {
       }
     } catch (error) {
       return fn(false, { error: error.message });
+    } finally {
+      if (db) {
+        await db.release();
+      }
     }
   }
 };

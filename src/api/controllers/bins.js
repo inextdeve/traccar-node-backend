@@ -1,8 +1,10 @@
 import moment from "moment";
-import { db } from "../db/config/index.js";
+import dbPools from "../db/config/index.js";
 import { LAST7DAYS, LASTWEEK } from "../helpers/constants.js";
 
 const bins = async (req, res) => {
+  let db;
+
   const query = req.query;
 
   const routeCondition = req.query.routeid
@@ -39,6 +41,7 @@ const bins = async (req, res) => {
   AND tt.serv_time = groupedtt.MaxDateTime`;
 
   try {
+    db = await dbPools.pool.getConnection();
     const allBins = await db.query(queryAllBins);
 
     const data = await db.query(dbQuery);
@@ -91,10 +94,16 @@ const bins = async (req, res) => {
     res.json(response);
   } catch (error) {
     res.status(500).json({ success: false, message: "Internal Server Error" });
+  } finally {
+    if (db) {
+      await db.release();
+    }
   }
 };
 
 const binById = async (req, res) => {
+  let db;
+
   //GET TODAY STATUS
   const id = parseInt(req.params.id) || "0";
 
@@ -118,44 +127,55 @@ const binById = async (req, res) => {
                     WHERE tc_geofences.id=${id} AND tc_geofences.attributes LIKE '%"bins": "yes"%';
                   END IF;`;
 
-  const data = await db.query(dbQuery);
+  try {
+    db = await dbPools.pool.getConnection();
+    const data = await db.query(dbQuery);
 
-  const last7DaysQuery = `SELECT tcn_poi_schedule.serv_time, tcn_poi_schedule.VehicleID AS emptied_by FROM tcn_poi_schedule WHERE tcn_poi_schedule.serv_time BETWEEN "${LASTWEEK()}" AND (select current_timestamp) AND  tcn_poi_schedule.geoid=${id}`;
+    const last7DaysQuery = `SELECT tcn_poi_schedule.serv_time, tcn_poi_schedule.VehicleID AS emptied_by FROM tcn_poi_schedule WHERE tcn_poi_schedule.serv_time BETWEEN "${LASTWEEK()}" AND (select current_timestamp) AND  tcn_poi_schedule.geoid=${id}`;
 
-  const last7DaysStatus = await db.query(last7DaysQuery);
+    const last7DaysStatus = await db.query(last7DaysQuery);
 
-  //Check which day is empted and not
-  const lastSevenDaysCheck = LAST7DAYS().map((day) => {
-    return {
-      date: day,
-      status: last7DaysStatus.some(
-        (bin) => bin.serv_time.toISOString().split("T")[0] === day
-      )
-        ? "empty"
-        : "unempty",
-      emptedTime: last7DaysStatus
-        .filter((bin) => bin.serv_time.toISOString().split("T")[0] === day)
-        .map((ele) => ele.serv_time)[0],
-      emptiedBy: last7DaysStatus.filter(
-        (bin) => bin.serv_time.toISOString().split("T")[0] === day
-      )[0]?.emptied_by,
-    };
-  });
+    //Check which day is empted and not
+    const lastSevenDaysCheck = LAST7DAYS().map((day) => {
+      return {
+        date: day,
+        status: last7DaysStatus.some(
+          (bin) => bin.serv_time.toISOString().split("T")[0] === day
+        )
+          ? "empty"
+          : "unempty",
+        emptedTime: last7DaysStatus
+          .filter((bin) => bin.serv_time.toISOString().split("T")[0] === day)
+          .map((ele) => ele.serv_time)[0],
+        emptiedBy: last7DaysStatus.filter(
+          (bin) => bin.serv_time.toISOString().split("T")[0] === day
+        )[0]?.emptied_by,
+      };
+    });
 
-  const response = [
-    ...data[0].map((ele) => ({
-      ...ele,
-      driver_phone: `${ele.driver_phone}`,
-      latitude: ele.position.split(" ")[0].split("(")[1],
-      longitude: ele.position.split(" ")[1].split(",")[0],
-      status: !!ele.serv_time ? "empty" : "unempty",
-    })),
-    { last7Days: lastSevenDaysCheck.reverse() },
-  ];
-  res.json(response);
+    const response = [
+      ...data[0].map((ele) => ({
+        ...ele,
+        driver_phone: `${ele.driver_phone}`,
+        latitude: ele.position.split(" ")[0].split("(")[1],
+        longitude: ele.position.split(" ")[1].split(",")[0],
+        status: !!ele.serv_time ? "empty" : "unempty",
+      })),
+      { last7Days: lastSevenDaysCheck.reverse() },
+    ];
+    res.json(response);
+  } catch (error) {
+    res.json({ error: error.message });
+  } finally {
+    if (db) {
+      await db.release();
+    }
+  }
 };
 
 const binReports = async (req, res) => {
+  let db;
+
   const query = req.query;
 
   let dbQuery = `SELECT tcn_g_reprots.id,tcn_g_reprots.phone, tcn_g_reprots.username, tcn_g_reprots.description, tcn_g_reprots.idbin AS id_bin, tcn_g_reprots.time, tcn_g_reprots.img, tcn_g_reprots.imgafter, tcn_g_reprots.type, tcn_g_reprots.status, tc_geofences.area, tc_geofences.description AS description_bin, tcn_centers.center_name FROM tcn_g_reprots
@@ -165,23 +185,36 @@ const binReports = async (req, res) => {
     query.to ? `"${query.to}"` : false || "(select current_timestamp)"
   }`;
 
-  const data = (await db.query(dbQuery)).map((item) => {
-    return {
-      ...item,
-      img: item.img ? `https://bins.rcj.care/${JSON.parse(item.img)[0]}` : null,
-      imgafter: item.imgafter
-        ? `https://bins.rcj.care/${JSON.parse(item.imgafter)[0]}`
-        : null,
-      type: JSON.parse(item.type)[0],
-      latitude: item.area.split(" ")[0].split("(")[1],
-      longitude: item.area.split(" ")[1].split("(")[0].split(",")[0],
-    };
-  });
+  try {
+    db = await dbPools.pool.getConnection();
+    const data = (await db.query(dbQuery)).map((item) => {
+      return {
+        ...item,
+        img: item.img
+          ? `https://bins.rcj.care/${JSON.parse(item.img)[0]}`
+          : null,
+        imgafter: item.imgafter
+          ? `https://bins.rcj.care/${JSON.parse(item.imgafter)[0]}`
+          : null,
+        type: JSON.parse(item.type)[0],
+        latitude: item.area.split(" ")[0].split("(")[1],
+        longitude: item.area.split(" ")[1].split("(")[0].split(",")[0],
+      };
+    });
 
-  res.json(data);
+    res.json(data);
+  } catch (error) {
+    res.json({ error: error.message });
+  } finally {
+    if (db) {
+      await db.release();
+    }
+  }
 };
 
 const binCategorized = async (req, res) => {
+  let db;
+
   const query = req.query;
   const category = req.params.category;
 
@@ -253,6 +286,8 @@ const binCategorized = async (req, res) => {
   };
 
   try {
+    db = await dbPools.pool.getConnection();
+
     const allBins = await db.query(queryAllBins);
 
     const data = await db.query(dbQuery);
@@ -295,10 +330,16 @@ const binCategorized = async (req, res) => {
     }
   } catch (e) {
     res.status(500).end();
+  } finally {
+    if (db) {
+      await db.release();
+    }
   }
 };
 
 const summary = async (req, res) => {
+  let db;
+
   const query = req.query;
   //Query for last 7 days bins status
   const dbQuery = `SELECT tcn_poi_schedule.geoid, tcn_poi_schedule.serv_time FROM tcn_poi_schedule
@@ -312,6 +353,7 @@ const summary = async (req, res) => {
                         WHERE tc_geofences.attributes LIKE '%"bins": "yes"%'`;
 
   try {
+    db = await dbPools.pool.getConnection();
     const [allBins, data] = await Promise.all([
       db.query(queryAllBins),
       db.query(dbQuery),
@@ -345,16 +387,23 @@ const summary = async (req, res) => {
     res.json(response);
   } catch (error) {
     res.status(500).end();
+  } finally {
+    if (db) {
+      await db.release();
+    }
   }
 };
 
 // Patch Controllers
 
 const updateBin = async (req, res) => {
+  let db;
+
   const body = req.body;
 
   // Check if the target id is exist
   try {
+    db = await dbPools.pool.getConnection();
     const query = `SELECT tc_geofences.id FROM tc_geofences WHERE tc_geofences.id='${body.id_bin}' AND tc_geofences.attributes LIKE '%"bins": "yes"%'`;
     const targetExist = await db.query(query);
 
@@ -392,12 +441,18 @@ const updateBin = async (req, res) => {
     res
       .status(400)
       .json({ success: false, message: "Item cannot updated server error" });
+  } finally {
+    if (db) {
+      await db.release();
+    }
   }
 };
 
 // Put Controller
 
 const addBin = async (req, res) => {
+  let db;
+
   const body = req.body;
   delete body.id_bin;
 
@@ -428,6 +483,7 @@ const addBin = async (req, res) => {
     .join(", ");
 
   try {
+    db = await dbPools.pool.getConnection();
     const addQuery = `INSERT INTO tc_geofences (${Object.keys(body).join(
       ", "
     )}) VALUES (${flatValues});`;
@@ -440,15 +496,22 @@ const addBin = async (req, res) => {
     });
   } catch (e) {
     res.status(400).json({ success: false });
+  } finally {
+    if (db) {
+      await db.release();
+    }
   }
 };
 
 const deleteBin = async (req, res) => {
+  let db;
+
   const body = req.body;
 
   // body.selected contains ids of bins you want to delete
 
   try {
+    db = await dbPools.pool.getConnection();
     if (body.selected.length > 10) {
       throw new Error(
         "You cannot delete more than 10 items for security reasons"
@@ -466,12 +529,18 @@ const deleteBin = async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
+  } finally {
+    if (db) {
+      await db.release();
+    }
   }
 };
 
 // Set a bin status [empted]
 
 const updateBinStatus = async (req, res) => {
+  let db;
+
   const { description } = req.body;
 
   if (!description)
@@ -485,6 +554,7 @@ const updateBinStatus = async (req, res) => {
                           WHERE tc_geofences.description="${description}" LIMIT 1`;
 
   try {
+    db = await dbPools.pool.getConnection();
     // Check if the target bin is exist
     const targetBin = await db.query(targetBinQuery);
     if (!targetBin || !targetBin?.length)
@@ -522,6 +592,10 @@ const updateBinStatus = async (req, res) => {
         .json({ success: false, message: "Conflict! already empted bin" });
     }
     res.status(500).json({ success: false, message: "Internal Server Error" });
+  } finally {
+    if (db) {
+      await db.release();
+    }
   }
 };
 

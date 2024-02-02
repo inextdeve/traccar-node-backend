@@ -1,7 +1,8 @@
-import { db } from "../db/config/index.js";
+import dbPools from "../db/config/index.js";
 import { TODAY, LAST7DAYS, LASTWEEK } from "../helpers/constants.js";
 
 const washingCategorized = async (req, res) => {
+  let db;
   const query = req.query;
 
   //Query for washed bins only
@@ -63,6 +64,8 @@ const washingCategorized = async (req, res) => {
   };
 
   try {
+    db = await dbPools.pool.getConnection();
+
     const allBins = await db.query(queryAllBins);
 
     const data = await db.query(dbQuery);
@@ -106,10 +109,16 @@ const washingCategorized = async (req, res) => {
     }
   } catch (e) {
     res.status(500).end();
+  } finally {
+    if (db) {
+      await db.release();
+    }
   }
 };
 
 const summary = async (req, res) => {
+  let db;
+
   //Query for last 7 days washing status
   const dbQuery = `SELECT tcn_posi_washing.geoid, tcn_posi_washing.serv_time FROM tcn_posi_washing
                     WHERE tcn_posi_washing.serv_time BETWEEN ${LASTWEEK()} AND (SELECT current_timestamp)`;
@@ -119,6 +128,7 @@ const summary = async (req, res) => {
                         WHERE tc_geofences.attributes LIKE '%"bins": "yes"%'`;
 
   try {
+    db = await dbPools.pool.getConnection();
     const allBins = await db.query(queryAllBins);
     const data = await db.query(dbQuery);
 
@@ -137,6 +147,10 @@ const summary = async (req, res) => {
     res.json(lastSevenDaysStatus);
   } catch (error) {
     res.status(500).end();
+  } finally {
+    if (db) {
+      await db.release();
+    }
   }
 };
 
