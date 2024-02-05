@@ -59,6 +59,8 @@ const nearbyStops = async (req, res) => {
     to: new Date(req.query.to),
   });
 
+  console.log(error)
+
   if (!success) return res.status(400).end("Entries not valid");
 
   const { latitude, longitude, devices, distance, to, from } = req.query;
