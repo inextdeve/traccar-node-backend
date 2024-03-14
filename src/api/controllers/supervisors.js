@@ -13,7 +13,7 @@ const statistics = async (req, res) => {
 
     //Query for empted bins for each driver
 
-    const emptedBinsQuery = `SELECT tc_drivers.id, COUNT(tc_geofences.routid) AS emptedBins FROM tc_geofences
+    const emptedBinsQuery = `SELECT tc_drivers.id AS driverid, COUNT(tc_geofences.routid) AS emptedBins FROM tc_geofences
                             INNER JOIN tcn_poi_schedule ON tcn_poi_schedule.geoid = tc_geofences.id
                             INNER JOIN tcn_routs ON tcn_routs.id = tc_geofences.routid
                             INNER JOIN tc_drivers ON tc_drivers.id = tcn_routs.driverid
