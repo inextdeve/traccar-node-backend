@@ -8,6 +8,7 @@ const statistics = async (req, res) => {
   const allBinsQuery = `SELECT tcn_routs.driverid, tc_drivers.name, COUNT(*) AS bins FROM tc_geofences
                         INNER JOIN tcn_routs ON tc_geofences.routid = tcn_routs.id
                         INNER JOIN tc_drivers ON tc_drivers.id = tcn_routs.driverid
+                        WHERE tc_geofences.attributes LIKE '%"bins": "yes"%'
                         GROUP BY tcn_routs.driverid`;
 
     //Query for empted bins for each driver
@@ -26,10 +27,11 @@ const statistics = async (req, res) => {
     const emptedBins = await db.query(emptedBinsQuery);
 
     const supervisorsStatistic = binsByDriver.map((driverBins) => {
+        const emptedBins = parseInt(emptedBins.find(emptedByDriver => emptedByDriver.driverid === driverBins.driverid)?.emptedBins);
         return {
             ...driverBins,
             bins: parseInt(driverBins.bins),
-            emptedBins: parseInt(emptedBins.find(emptedByDriver => emptedByDriver.driverid === driverBins.driverid)?.emptedBins)
+            emptedBins: emptedBins ? emptedBins : 0
         }
     })
 
