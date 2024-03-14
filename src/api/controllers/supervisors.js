@@ -13,11 +13,12 @@ const statistics = async (req, res) => {
 
     //Query for empted bins for each driver
 
-    const emptedBinsQuery = `SELECT tcn_routs.driverid,  COUNT(tcn_poi_schedule.geoid) AS emptedBins FROM tcn_poi_schedule
-                    inner JOIN tcn_routs ON tcn_routs.deviceid = tcn_poi_schedule.bydevice
-                    inner JOIN tc_drivers ON tcn_routs.driverid = tc_drivers.id
-                    WHERE serv_time BETWEEN "${query.from}" AND ${query.to ? `"${query.to}"` : false || "(SELECT current_timestamp)"}
-                    GROUP BY tcn_routs.driverid`;
+    const emptedBinsQuery = `SELECT tc_drivers.id, COUNT(tc_geofences.routid) AS emptedBins FROM tc_geofences
+                            INNER JOIN tcn_poi_schedule ON tcn_poi_schedule.geoid = tc_geofences.id
+                            INNER JOIN tcn_routs ON tcn_routs.id = tc_geofences.routid
+                            INNER JOIN tc_drivers ON tc_drivers.id = tcn_routs.driverid
+                            WHERE tcn_poi_schedule.serv_time BETWEEN "${query.from}" AND ${query.to ? `"${query.to}"` : false || "(SELECT current_timestamp)"}
+                            GROUP BY tc_drivers.id`;
 
   try {
     db = await dbPools.pool.getConnection();
