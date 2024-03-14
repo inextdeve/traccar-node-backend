@@ -27,11 +27,11 @@ const statistics = async (req, res) => {
     const emptedBins = await db.query(emptedBinsQuery);
 
     const supervisorsStatistic = binsByDriver.map((driverBins) => {
-        const emptedBins = parseInt(emptedBins.find(emptedByDriver => emptedByDriver.driverid === driverBins.driverid)?.emptedBins);
+        const empted = parseInt(emptedBins.find(emptedByDriver => emptedByDriver.driverid === driverBins.driverid)?.emptedBins);
         return {
             ...driverBins,
             bins: parseInt(driverBins.bins),
-            emptedBins: emptedBins ? emptedBins : 0
+            emptedBins: empted ? empted : 0
         }
     })
 
