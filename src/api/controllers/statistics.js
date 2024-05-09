@@ -34,7 +34,7 @@ const kpi = async (req, res) => {
                           AND DATE(fixtime) ='${query.from.split("T")[0]}'`;
 
   //Count All Bins
-  const countBins = `SELECT COUNT(id) AS count FROM tc_geofences WHERE attributes LIKE '%"bins": "yes"%'`;
+  const countBins = `SELECT COUNT(id) AS count FROM tc_geofences WHERE attributes LIKE '%"bins": "yes"%' AND JSON_EXTRACT(tc_geofences.attributes, "$.cartoon") IS NULL`;
 
   //Count All Vehicle
   const countVehicle = `SELECT COUNT(id) AS count FROM tc_devices`;
