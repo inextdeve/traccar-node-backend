@@ -9,6 +9,7 @@ import {
   addBin,
   deleteBin,
   updateBinStatus,
+  newBins,
 } from "../controllers/bins.js";
 import cache from "../middlewares/cache.js";
 
@@ -20,7 +21,9 @@ router.get("/", bins);
 router.get("/reports", binReports);
 router.get("/summary", summary);
 router.get("/by/:category", binCategorized);
-router.get("/:id", binById);
+router.get("/test", newBins);
+
+// router.get("/:id", binById);
 
 router.put("/", addBin);
 router.patch("/", updateBin);

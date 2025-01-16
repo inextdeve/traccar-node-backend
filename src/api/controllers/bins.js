@@ -212,6 +212,67 @@ const binReports = async (req, res) => {
   }
 };
 
+export const newBins = async (req, res) => {
+  let db;
+
+  const params = [];
+
+  let { empted, from, to, by } = req.query;
+
+  console.log(from, to);
+
+  // Validation for required parameters
+  if (empted) {
+    if (!from || !to) {
+      return res
+        .status(400)
+        .send(
+          `Both "from" and "to" parameters are required when "empted" is specified.`
+        );
+    }
+  } else if (from || to) {
+    return res
+      .status(400)
+      .send(
+        `"from" and "to" parameters can only be used with the "empted" query.`
+      );
+  }
+  // Columns
+  let query = `SELECT bin.id, bin.description, bin.area AS position, tcn_centers.id AS centerId, tcn_centers.center_name, tcn_routs.id AS routeId, tcn_routs.rout_code, tc_drivers.name AS driverName, tc_drivers.phone, tcn_bin_type.bintype, tcn_bin_type.id AS binTypeId `;
+
+  if (empted || from || to) {
+    query += `, emptedBin.geoid, emptedBin.bydevice `;
+  }
+  // Table Joins
+  query += `FROM tc_geofences bin
+            LEFT JOIN tcn_centers ON bin.centerid=tcn_centers.id
+            LEFT JOIN tcn_routs ON bin.routid=tcn_routs.id
+            LEFT JOIN tc_drivers ON tcn_routs.driverid=tc_drivers.id
+            LEFT JOIN tcn_bin_type ON bin.bintypeid=tcn_bin_type.id`;
+
+  if (empted || from || to) {
+    query += `
+                LEFT JOIN tcn_poi_schedule emptedBin ON bin.id = emptedBin.geoid AND emptedBin.serv_time >= ? AND emptedBin.serv_time <= ?
+               `;
+    params.push(from, to);
+  }
+
+  query += `
+    WHERE bin.attributes LIKE '%"bins": "yes"%' 
+  `;
+
+  try {
+    // Execute the query
+    db = await dbPools.pool.getConnection();
+    const data = await db.query(query, params);
+
+    res.json(data.map((bin) => ({ ...bin, phone: Number(bin.phone) })));
+  } catch (error) {
+    console.error("Database query failed:", error);
+    res.status(500).send("An error occurred while fetching bins");
+  }
+};
+
 const binCategorized = async (req, res) => {
   let db;
 
