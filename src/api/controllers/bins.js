@@ -29,11 +29,11 @@ const bins = async (req, res) => {
                         JOIN tcn_centers ON tc_geofences.centerid=tcn_centers.id
                         JOIN tcn_routs ON tc_geofences.routid=tcn_routs.id
                         JOIN tcn_bin_type ON tc_geofences.bintypeid=tcn_bin_type.id 
-                        WHERE attributes LIKE '%"bins": "yes"%' ${
-                          routeCondition ? `AND ${routeCondition}` : ""
-                        } ${centerCondition ? `AND ${centerCondition}` : ""} ${
-    binTypeCondition ? `AND ${binTypeCondition}` : ""
-  }`;
+                        WHERE attributes LIKE '%"bins": "yes"%'
+                        AND JSON_EXTRACT(attributes, "$.cartoon") IS NULL
+                        ${routeCondition ? `AND ${routeCondition}` : ""} ${
+    centerCondition ? `AND ${centerCondition}` : ""
+  } ${binTypeCondition ? `AND ${binTypeCondition}` : ""}`;
 
   const queryLastOperations = `SELECT tt.geoid AS id, tt.serv_time FROM tcn_poi_schedule tt
   INNER JOIN (SELECT geoid, MAX(serv_time) AS MaxDateTime FROM tcn_poi_schedule GROUP BY geoid)
@@ -117,7 +117,7 @@ const binById = async (req, res) => {
                     JOIN tcn_routs ON tc_geofences.routid=tcn_routs.id
                     JOIN tc_drivers ON tcn_routs.driverid=tc_drivers.id
                     JOIN tcn_bin_type ON tc_geofences.bintypeid=tcn_bin_type.id
-                    WHERE tcn_poi_schedule.serv_time BETWEEN "${req.query.from}" AND (select current_timestamp) AND tcn_poi_schedule.geoid=${id} AND tc_geofences.attributes LIKE '%"bins": "yes"%' LIMIT 1;
+                    WHERE tcn_poi_schedule.serv_time BETWEEN "${req.query.from}" AND (select current_timestamp) AND tcn_poi_schedule.geoid=${id} AND tc_geofences.attributes LIKE '%"bins": "yes"%' AND JSON_EXTRACT(tc_geofences.attributes, "$.cartoon") IS NULL LIMIT 1;
                   ELSE
                     SELECT tc_geofences.id AS id_bin, tc_geofences.description, tc_geofences.area AS position, tcn_centers.center_name AS center, tcn_routs.rout_code AS route, tc_drivers.name AS driverName, tc_drivers.phone AS driver_phone, tcn_bin_type.bintype FROM tc_geofences
                     JOIN tcn_centers ON tc_geofences.centerid=tcn_centers.id
@@ -293,7 +293,7 @@ const binCategorized = async (req, res) => {
                         JOIN tcn_routs ON tc_geofences.routid=tcn_routs.id
                         JOIN tc_drivers ON tcn_routs.driverid=tc_drivers.id
                         JOIN tcn_bin_type ON tc_geofences.bintypeid=tcn_bin_type.id 
-                        WHERE tc_geofences.attributes LIKE '%"bins": "yes"%'
+                        WHERE tc_geofences.attributes LIKE '%"bins": "yes"%' AND JSON_EXTRACT(tc_geofences.attributes, "$.cartoon") IS NULL
                         ${
                           query.id
                             ? category === "bintype"
@@ -411,7 +411,7 @@ const summary = async (req, res) => {
   }`;
   //Query for all bins
   const queryAllBins = `SELECT COUNT(tc_geofences.id) AS counter FROM tc_geofences
-                        WHERE tc_geofences.attributes LIKE '%"bins": "yes"%'`;
+                        WHERE tc_geofences.attributes LIKE '%"bins": "yes"%' AND JSON_EXTRACT(tc_geofences.attributes, "$.cartoon") IS NULL`;
 
   try {
     db = await dbPools.pool.getConnection();
@@ -465,7 +465,7 @@ const updateBin = async (req, res) => {
   // Check if the target id is exist
   try {
     db = await dbPools.pool.getConnection();
-    const query = `SELECT tc_geofences.id FROM tc_geofences WHERE tc_geofences.id='${body.id_bin}' AND tc_geofences.attributes LIKE '%"bins": "yes"%'`;
+    const query = `SELECT tc_geofences.id FROM tc_geofences WHERE tc_geofences.id='${body.id_bin}' AND tc_geofences.attributes LIKE '%"bins": "yes"%' AND JSON_EXTRACT(tc_geofences.attributes, "$.cartoon") IS NULL`;
     const targetExist = await db.query(query);
 
     if (!targetExist?.length) {
