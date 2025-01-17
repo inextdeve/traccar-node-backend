@@ -20,7 +20,7 @@ router.use(cache(30, "json"));
 router.get("/", bins);
 router.get("/reports", binReports);
 router.get("/summary", summary);
-router.get("/by/:category", binCategorized);
+router.get("/by/:category(bintype|center|route)", binCategorized);
 router.get("/test", newBins);
 
 // router.get("/:id", binById);

@@ -1,6 +1,7 @@
 import moment from "moment";
 import dbPools from "../db/config/index.js";
 import { LAST7DAYS, LASTWEEK } from "../helpers/constants.js";
+import { getDaysBetweenDates } from "../helpers/utils.js";
 
 const bins = async (req, res) => {
   let db;
@@ -279,116 +280,129 @@ const binCategorized = async (req, res) => {
   const query = req.query;
   const category = req.params.category;
 
+  const allBinsParams = [];
+
+  const numberOfDays =
+    getDaysBetweenDates(query.from, query.to || new Date().toISOString()) + 1;
+
   //Query for empted bins only
   const dbQuery = `SELECT tcn_poi_schedule.geoid, tcn_poi_schedule.bydevice, tc_geofences.description FROM tcn_poi_schedule
                   RIGHT JOIN tc_geofences ON tcn_poi_schedule.geoid=tc_geofences.id
-                  WHERE tcn_poi_schedule.serv_time BETWEEN "${
-                    query.from
-                  }" AND ${
-    query.to ? `"${query.to}"` : false || "(select current_timestamp)"
-  }`;
+                  WHERE tcn_poi_schedule.serv_time BETWEEN ? AND ?`;
   //Query for all bins
-  const queryAllBins = `SELECT tc_geofences.id, tc_geofences.description, tc_geofences.area AS position,tcn_centers.center_name, tcn_centers.id AS centerId, tcn_routs.rout_code, tcn_routs.id AS routeId,tc_drivers.name AS driverName, tc_drivers.phone, tcn_bin_type.bintype, tcn_bin_type.id AS binTypeId FROM tc_geofences
+  let queryAllBins = `SELECT tc_geofences.id, tc_geofences.description, tc_geofences.area AS position,tcn_centers.center_name, tcn_centers.id AS centerId, tcn_routs.rout_code, tcn_routs.id AS routeId,tc_drivers.name AS driverName, tc_drivers.phone, tcn_bin_type.bintype, tcn_bin_type.id AS binTypeId FROM tc_geofences
                         JOIN tcn_centers ON tc_geofences.centerid=tcn_centers.id
                         JOIN tcn_routs ON tc_geofences.routid=tcn_routs.id
                         JOIN tc_drivers ON tcn_routs.driverid=tc_drivers.id
                         JOIN tcn_bin_type ON tc_geofences.bintypeid=tcn_bin_type.id 
                         WHERE tc_geofences.attributes LIKE '%"bins": "yes"%' AND JSON_EXTRACT(tc_geofences.attributes, "$.cartoon") IS NULL
-                        ${
-                          query.id
-                            ? category === "bintype"
-                              ? `AND tcn_bin_type.id = ${query.id}`
-                              : category === "center"
-                              ? `AND tcn_centers.id = ${query.id}`
-                              : category === "route"
-                              ? `AND tcn_routs.id = ${query.id}`
-                              : ""
-                            : ""
-                        }`;
+                         `;
 
-  const groupedBy = (data, category) => {
-    const byGroup = new Object();
+  if (query.id) {
+    if (category === "bintype") {
+      queryAllBins += "AND tcn_bin_type.id = ? ";
+    } else if (category === "center") {
+      queryAllBins += "AND tcn_centers.id = ? ";
+    } else {
+      queryAllBins += "AND tcn_routs.id = ? ";
+    }
+    allBinsParams.push(query.id);
+  }
 
-    data.forEach((item) => {
-      if (byGroup[item[category]]) {
-        byGroup[item[category]].total += 1;
-        byGroup[item[category]].empty_bin += Number(item.empty_bin);
-        byGroup[item[category]].un_empty_bin += Number(!item.empty_bin);
-        return;
-      }
-      byGroup[item[category]] = {
-        [req.params.category]: item[category],
-        total: 1,
-        empty_bin: Number(item.empty_bin),
-        un_empty_bin: Number(!item.empty_bin),
-      };
+  const groupedBy = (emptedBins, allBins, category) => {
+    const categorizedBins = (categoryId) =>
+      Object.values(allBins).reduce((acc, bin) => {
+        if (!acc[bin[categoryId]]) {
+          acc[bin[categoryId]] = [];
+        }
+        acc[bin[categoryId]].push(bin);
+        return acc;
+      }, {});
 
-      if (category === "rout_code") {
-        byGroup[item[category]].phone = `${parseInt(item.phone)}`;
-        byGroup[item[category]].shift = "morning";
-        byGroup[item[category]].routeId = item.routeId;
-        byGroup[item[category]].driver = item.driverName;
-      }
+    if (category === "route") {
+      const allBinsByRoute = categorizedBins("routeId");
 
-      if (category === "bintype") {
-        byGroup[item[category]].binTypeId = item.binTypeId;
-      }
+      const summary = Object.keys(allBinsByRoute).map((key) => {
+        const empty_bin = emptedBins.filter((bin) => bin.routeId == key).length;
+        const total = allBinsByRoute[key].length * numberOfDays;
+        return {
+          route: allBinsByRoute[key][0].rout_code,
+          total,
+          empty_bin,
+          un_empty_bin: total - empty_bin,
+          phone: `${parseInt(allBinsByRoute[key][0].phone)}`,
+          shift: "morning",
+          routeId: Number(key),
+          driver: allBinsByRoute[key][0].driverName,
+        };
+      });
 
-      if (category === "center_name") {
-        byGroup[item[category]].centerId = item.centerId;
-      }
-    });
-    const byGroupList = new Array();
-    for (let key in byGroup) {
-      byGroupList.push(byGroup[key]);
+      return res.json(summary);
     }
 
-    res.json(byGroupList);
+    if (category === "bintype") {
+      const allBinsByType = categorizedBins("binTypeId");
+
+      const summary = Object.keys(allBinsByType).map((key) => {
+        const empty_bin = emptedBins.filter(
+          (bin) => bin.binTypeId == key
+        ).length;
+        const total = allBinsByType[key].length * numberOfDays;
+        return {
+          bintype: allBinsByType[key][0].bintype,
+          total,
+          empty_bin,
+          un_empty_bin: total - empty_bin,
+          binTypeId: Number(key),
+        };
+      });
+
+      return res.json(summary);
+    }
+
+    if (category === "center") {
+      const allBinsByCenter = categorizedBins("centerId");
+
+      const summary = Object.keys(allBinsByCenter).map((key) => {
+        const empty_bin = emptedBins.filter(
+          (bin) => bin.centerId == key
+        ).length;
+        const total = allBinsByCenter[key].length * numberOfDays;
+
+        return {
+          center_name: allBinsByCenter[key][0].center_name,
+          total,
+          empty_bin,
+          un_empty_bin: total - empty_bin,
+          centerId: Number(key),
+        };
+      });
+
+      return res.json(summary);
+    }
   };
 
   try {
     db = await dbPools.pool.getConnection();
 
-    const allBins = await db.query(queryAllBins);
+    const allBins = await db.query(queryAllBins, allBinsParams);
 
-    const data = await db.query(dbQuery);
+    let emptedBins = await db.query(dbQuery, [
+      query.from,
+      query.to || new Date().toISOString(),
+    ]);
 
-    const dataObject = new Object();
+    const allBinsObject = allBins.reduce((acc, item) => {
+      acc[item.id] = item;
+      return acc;
+    }, {});
 
-    data.forEach((element) => {
-      dataObject[element.geoid] = element;
-    });
+    emptedBins = emptedBins.map((bin) => ({
+      ...bin,
+      ...allBinsObject[bin.geoid],
+    }));
 
-    let response = new Array();
-
-    response = allBins.map((bin) => {
-      if (dataObject[bin.id]) {
-        return {
-          ...bin,
-          empty_bin: true,
-        };
-      } else {
-        return {
-          ...bin,
-          empty_bin: false,
-        };
-      }
-    });
-
-    switch (req.params.category) {
-      case "bintype":
-        groupedBy(response, "bintype");
-        break;
-      case "center":
-        groupedBy(response, "center_name");
-        break;
-      case "route":
-        groupedBy(response, "rout_code");
-        break;
-      default:
-        res.status(204).end();
-        break;
-    }
+    return groupedBy(emptedBins, allBins, category);
   } catch (e) {
     res.status(500).end();
   } finally {

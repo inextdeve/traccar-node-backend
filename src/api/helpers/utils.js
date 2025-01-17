@@ -1,3 +1,5 @@
+import moment from "moment";
+
 export const getDatesInRange = (startDate, endDate) => {
   const date = new Date(startDate.getTime());
 
@@ -10,6 +12,18 @@ export const getDatesInRange = (startDate, endDate) => {
 
   return dates;
 };
+
+/**
+ * @param {Date} startDate start date
+ * @param {Date} endDate end date
+ */
+
+export function getDaysBetweenDates(startDate, endDate) {
+  const start = moment(startDate);
+  const end = moment(endDate);
+  return end.diff(start, "days"); // Get the difference in days
+}
+
 /**
  * @param {Number} total Total items
  * @param {Number} n Targeted items
