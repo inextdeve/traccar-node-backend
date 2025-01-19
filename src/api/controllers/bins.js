@@ -370,7 +370,7 @@ const binCategorized = async (req, res) => {
         const total = allBinsByCenter[key].length * numberOfDays;
 
         return {
-          center_name: allBinsByCenter[key][0].center_name,
+          center: allBinsByCenter[key][0].center_name,
           total,
           empty_bin,
           un_empty_bin: total - empty_bin,
