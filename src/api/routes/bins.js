@@ -23,7 +23,7 @@ router.get("/summary", summary);
 router.get("/by/:category(bintype|center|route)", binCategorized);
 router.get("/test", newBins);
 
-// router.get("/:id", binById);
+router.get("/:id", binById);
 
 router.put("/", addBin);
 router.patch("/", updateBin);
