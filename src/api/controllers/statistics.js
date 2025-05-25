@@ -137,11 +137,18 @@ const summary = async (req, res) => {
   FROM tcn_g_reprots
   WHERE time >= DATE_SUB(NOW(), INTERVAL 7 DAY)`;
 
-  const dbQuerySweepers = `SELECT AVG(speed) AS avg_speed, MAX(speed) AS max_speed, SUM(JSON_EXTRACT(attributes, '$.distance')/1000) AS total_distance, 826 * 7 AS total_routs, (SUM(JSON_EXTRACT(attributes, '$.distance')/1000)/(826 * 7))*100 AS rate_percentage
+  const dbQuerySweepers = `WITH daily_report AS ( SELECT AVG(speed) AS avg_speed, MAX(speed) AS max_speed, LEAST(SUM(JSON_EXTRACT(attributes, '$.distance')/1000), 826) AS total_distance,
+  826 AS total_routs,
+  LEAST(SUM(JSON_EXTRACT(attributes, '$.distance')/1000), 826) * 100 / 826 AS rate_percentage
   FROM tc_positions
   WHERE deviceid IN (SELECT id FROM tc_devices WHERE groupid = 5)
   AND speed < 15
-  AND fixtime >= DATE_SUB(NOW(), INTERVAL 7 DAY)`;
+  AND fixtime >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+  GROUP BY DATE(fixtime))
+  
+  SELECT AVG(avg_speed) AS avg_speed, MAX(max_speed) AS max_speed,SUM(total_distance) AS total_distance, 826 * 7 AS total_routs, SUM(rate_percentage) / 7 AS rate_percentage FROM daily_report;
+
+`;
 
   try {
     db = await dbPools.pool.getConnection();
