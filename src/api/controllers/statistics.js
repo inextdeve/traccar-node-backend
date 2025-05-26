@@ -28,7 +28,7 @@ const kpi = async (req, res) => {
                           `;
 
   //Sweeper Status
-  const exitedSweepers = `SELECT LEAST(SUM(JSON_EXTRACT(attributes, '$.distance')/1000),826) AS completed FROM tc_positions 
+  const exitedSweepers = `SELECT COALESCE(LEAST(SUM(JSON_EXTRACT(attributes, '$.distance')/1000),826), 0) AS completed FROM tc_positions 
                           WHERE deviceid IN (SELECT id FROM tc_devices WHERE groupid = 5)
                           AND speed < 15
                           AND DATE(fixtime) ='${query.from.split("T")[0]}'`;
